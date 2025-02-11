@@ -25,7 +25,7 @@ With *.int files, also created .pat files.<br>
 
 # dcu2pat tests:
 
-Tested in free pascal, with lazarus ide<br>
+Build and run in free pascal, with lazarus ide<br>
 Tested with Delphi 2/2.1 RTL only<br>
 
 # why dcu2pat?
