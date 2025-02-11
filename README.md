@@ -35,3 +35,6 @@ Tested with Delphi 2/2.1 RTL only<br>
 # why dcu2pat?
 
 You can do .pat files from .obj generted by dcc32. The quality of such templates `.pat` from `.obj` lower.
+
+# todo:
+It is written terribly. Rewrite the Patterns generator, fully.
