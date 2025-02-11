@@ -5,27 +5,23 @@ with ugly hack, for make IDA patern files also.<br>
 With *.int files, also created .pat files.<br>
 
 # dcu2pat usage:
-<pre>
-make 2 dirs, in the program folder:
- d2.1_lib (put here dcu files form delphi 2)
- d2.1_res (here results are saved)
-</pre>
+1. Make 2 dirs, in the program folder:
+* `d2.1_lib` (put here dcu files form delphi 2)
+* `d2.1_res` (here results are saved)
 
-<pre>run alllib2.bat for delphi2.0</pre>
-After performing, in the `D2.1_Res` folder, .pat files must be created.
-(.int files are also created, but they are problematic due to a terrible crooked hack)<br>
+2. run `alllib2.bat` for delphi2.0
+* After performing, in the `D2.1_Res` folder, .pat files must be created. (.int files are also created, but they are problematic due to a terrible crooked hack)
 
-Copy `*.pat` in one file can be like this:<br>
-Go to the `D2.1_Res` folder and enter <br>
-<pre>copy *.pat d2.1.pat</pre>
+3. Copy `*.pat` in one file can be done like this: go to the `D2.1_Res` folder and type
+* `copy *.pat d2.1.pat`
 
-Add to the end of the file `D2.1.pat`
-<pre>'---Enter' for sigmake.exe</pre>
+4. Add to the end of the file `D2.1.pat`
+* `'---\n'` for sigmake.exe (where 'n - new line)
 
-To create a .sig file:
-<pre>sigmake -n "Delphi 2.1 rtl" d2.1.pat "d2.1.sig"</pre>
+5. To create a .sig file:
+* `sigmake -n "Delphi 2.1 rtl" d2.1.pat "d2.1.sig"`
 
-`d2.1.sig` copy to the `"folder with IDA"\SIG\PC\`
+6. copy `d2.1.sig` to the `"folder with IDA"\SIG\PC\`
 
 # dcu2pat tests:
 
