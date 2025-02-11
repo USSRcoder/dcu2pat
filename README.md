@@ -16,7 +16,7 @@ With *.int files, also created .pat files.<br>
 * `copy *.pat d2.1.pat`
 
 4. Add to the end of the file `D2.1.pat`
-* `'---\n'` for sigmake.exe (where 'n - new line)
+* `'---\n'` for sigmake.exe (where \n - new line)
 
 5. To create a .sig file:
 * `sigmake -n "Delphi 2.1 rtl" d2.1.pat "d2.1.sig"`
