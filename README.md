@@ -1,6 +1,6 @@
 # dcu2pat
 
-<b>DCU2PAT</b> - fork of DCU32INT utility by Alexei Hmelnov<br>
+<b>DCU2PAT</b> - fork of [DCU32INT](https://gitlab.com/dcu32int/DCU32INT) utility by Alexei Hmelnov<br>
 with ugly hack, for make IDA patern files also.<br>
 With *.int files, also created .pat files.<br>
 
