@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="12"/>
+    <BuildModes Active="Default"/>
+    <Units>
+      <Unit>
+        <Filename Value="DCU2PAT.dpr"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="62" Y="2"/>
+        <UsageCount Value="109"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit>
+      <Unit>
+        <Filename Value="DCU32.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="3"/>
+        <CursorPos X="23" Y="3"/>
+        <UsageCount Value="109"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit>
+      <Unit>
+        <Filename Value="DCUTbl.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="1"/>
+        <CursorPos X="16" Y="2"/>
+        <UsageCount Value="109"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit>
+      <Unit>
+        <Filename Value="DCU_In.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="4"/>
+        <TopLine Value="197"/>
+        <CursorPos X="13" Y="232"/>
+        <UsageCount Value="109"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit>
+      <Unit>
+        <Filename Value="DCU_Out.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="57"/>
+        <CursorPos X="14" Y="57"/>
+        <UsageCount Value="109"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit>
+      <Unit>
+        <Filename Value="FixUp.pas"/>
+        <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
+        <TopLine Value="27"/>
+        <CursorPos X="63" Y="19"/>
+        <UsageCount Value="109"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit>
+      <Unit>
+        <Filename Value="DAsmUtil.pas"/>
+        <EditorIndex Value="5"/>
+        <CursorPos X="36" Y="4"/>
+        <UsageCount Value="54"/>
+        <Loaded Value="True"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\fpc_ide\fpc\3.2.2\source\rtl\inc\systemh.inc"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="3" Y="747"/>
+        <UsageCount Value="47"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\fpc_ide\fpc\3.2.2\source\rtl\objpas\sysutils\finah.inc"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="10" Y="22"/>
+        <UsageCount Value="1"/>
+      </Unit>
+      <Unit>
+        <Filename Value="op.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="554"/>
+        <CursorPos X="26" Y="572"/>
+        <UsageCount Value="54"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\fpc_ide\fpc\3.2.2\source\rtl\objpas\sysutils\sysstrh.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="134"/>
+        <CursorPos X="10" Y="151"/>
+        <UsageCount Value="4"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\fpc_ide\fpc\3.2.2\source\rtl\objpas\sysutils\syswideh.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="4"/>
+        <CursorPos X="10" Y="32"/>
+        <UsageCount Value="12"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\fpc_ide\fpc\3.2.2\source\rtl\objpas\sysutils\sysutilh.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="270"/>
+        <CursorPos X="12" Y="287"/>
+        <UsageCount Value="9"/>
+      </Unit>
+      <Unit>
+        <Filename Value="DCU2PAT.dpr"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="-1"/>
+        <WindowIndex Value="-1"/>
+        <TopLine Value="-1"/>
+        <CursorPos X="-1" Y="-1"/>
+        <UsageCount Value="21"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit>
+    </Units>
+    <JumpHistory HistoryIndex="28">
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="4522" TopLine="4511"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="4523" TopLine="4511"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="4524" TopLine="4511"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="4523" TopLine="4511"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="4524" TopLine="4511"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="4523" TopLine="4511"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="4524" TopLine="4511"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="4523" TopLine="4511"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="4524" Column="58" TopLine="4511"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="4527" TopLine="4511"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="4532" TopLine="4517"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="4544" Column="13" TopLine="4517"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="4483" TopLine="4466"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="4763" TopLine="4746"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="4347" TopLine="4330"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="2199" Column="9" TopLine="2176"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="2155" Column="48" TopLine="2142"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="2196" Column="34" TopLine="2133"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="731" Column="19" TopLine="716"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU_Out.pas"/>
+        <Caret Line="441" Column="40" TopLine="430"/>
+      </Position>
+      <Position>
+        <Filename Value="FixUp.pas"/>
+        <Caret Line="199" Column="59" TopLine="181"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU_Out.pas"/>
+        <Caret Line="611" Column="19" TopLine="595"/>
+      </Position>
+      <Position>
+        <Filename Value="FixUp.pas"/>
+        <Caret Line="200" Column="69" TopLine="170"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU_Out.pas"/>
+        <Caret Line="441" Column="10" TopLine="431"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="4463" Column="27" TopLine="4456"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="732" Column="23" TopLine="716"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="2144" Column="23" TopLine="2116"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="4489" Column="21" TopLine="4477"/>
+      </Position>
+      <Position>
+        <Filename Value="DCU32.pas"/>
+        <Caret Line="732" Column="77" TopLine="716"/>
+      </Position>
+    </JumpHistory>
+    <RunParams>
+      <FormatVersion Value="2"/>
+      <Modes ActiveMode="default">
+        <Mode Name="default">
+          <local>
+            <CommandLineParams Value="-D+ SYSTEM.dcu"/>
+            <WorkingDirectory Value="C:\Users\adm\Downloads\Delphi2\DELPHI32\OPTIONS\SOURCE\RTL\pptu\bin"/>
+          </local>
+        </Mode>
+      </Modes>
+    </RunParams>
+    <HistoryLists>
+      <List Name="WorkingDirectory" Type="File" Count="1">
+        <Item1 Value="C:\Users\adm\Downloads\Delphi2\DELPHI32\OPTIONS\SOURCE\RTL\pptu\bin"/>
+      </List>
+      <List Name="CommandLineParameters" Count="1">
+        <Item1 Value="-D+ SYSTEM.dcu"/>
+      </List>
+    </HistoryLists>
+  </ProjectSession>
+  <Debugging>
+    <BreakPoints>
+      <Item>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="DCU2PAT.dpr"/>
+        <Line Value="230"/>
+      </Item>
+    </BreakPoints>
+    <Watches>
+      <Item>
+        <Expression Value="FDataBlPtr - FMemPtr + BlOfs"/>
+      </Item>
+      <Item>
+        <Expression Value="ScSt.CurPos - ScSt.StartPos"/>
+      </Item>
+      <Item RepeatCount="1000">
+        <Expression Value="@Buf"/>
+        <DisplayStyle Value="wdfHex"/>
+      </Item>
+      <Item ClassAutoCast="True">
+        <Expression Value="Cmd"/>
+        <DisplayStyle Value="wdfStructure"/>
+      </Item>
+      <Item ClassAutoCast="True">
+        <Expression Value="D"/>
+        <DisplayStyle Value="wdfHex"/>
+      </Item>
+      <Item ClassAutoCast="True">
+        <Expression Value="TTypeDecl(D)"/>
+      </Item>
+      <Item ClassAutoCast="True">
+        <Expression Value="TDCURec(TFPList(TList(FAddrs).FList).FList^[hDef-1])"/>
+      </Item>
+      <Item>
+        <Expression Value="FS"/>
+      </Item>
+      <Item RepeatCount="6">
+        <Expression Value="PChar(@Buf)"/>
+        <DisplayStyle Value="wdfChar"/>
+      </Item>
+    </Watches>
+  </Debugging>
+</CONFIG>
