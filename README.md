@@ -5,6 +5,9 @@ with ugly hack, for make IDA patern files also.<br>
 With *.int files, also created .pat files.<br>
 Also, *.h files created<br>
 
+# DCU32.pas
+set `conf_verbose` variable from 0 to 100, for verbose output in .h files;
+May be ugly, but it need, when you creating structures with offsets in IDA;
 
 # dcu2pat usage:
 1. Make 2 dirs, in the program folder:
@@ -33,6 +36,7 @@ Tested with Delphi 2/2.1 RTL only<br>
 # why dcu2pat?
 
 You can do .pat files from .obj generted by dcc32. The quality of such templates `.pat` from `.obj` lower.
+VMT structs are created, in .h files;
 
 # todo:
 It is written terribly. Rewrite the Patterns generator, fully.
