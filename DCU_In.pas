@@ -75,6 +75,7 @@ procedure ReadIndex64(var Res: TInt64Rec);
 procedure ReadUIndex64(var Res: TInt64Rec);
 
 function NDXToStr(NDXLo: LongInt): String;
+function NDXToStr2(NDXLo: LongInt): String;
 
 function MemToInt(DP: Pointer; Sz: Cardinal; var Res: integer): boolean;
 function MemToUInt(DP: Pointer; Sz: Cardinal; var Res: Cardinal): boolean;
@@ -304,6 +305,19 @@ begin
   else
     Result := Format('$%x%8.8x',[NDXHi,NDXLo])
 end ;
+
+function NDXToStr2(NDXLo: LongInt): String;
+begin
+  if NDXHi=0 then
+    Result := Format('0x%x',[NDXLo])
+  else if NDXHi=-1 then
+    Result := Format('-0x%x',[-NDXLo])
+  else if NDXHi<0 then
+    Result := Format('-0x%x%8.8x',[-NDXHi-1,-NDXLo])
+  else
+    Result := Format('0x%x%8.8x',[NDXHi,NDXLo])
+end ;
+
 
 function MemToInt(DP: Pointer; Sz: Cardinal; var Res: integer): boolean;
 begin

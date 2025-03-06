@@ -72,6 +72,7 @@ const
   DCUName: String = '';
   FNRes: String = '';
   FNRes_pat: String = '';
+  FNRes_h: String = '';
 
 function ProcessParms: boolean;
 var
@@ -175,8 +176,10 @@ begin
       FNRes := ReplaceStar(FNRes,FN);
 
     FNRes_pat := ChangeFileExt(FNRes,'.pat');
+    FNRes_h   := ChangeFileExt(FNRes,'.h');
     Writeln('Result: "',FNRes,'"');
     Writeln('Pat   : "',FNRes_pat,'"');
+    Writeln('h     : "',FNRes_h,'"');
 //    CloseFile(Output);
     Flush(Output);
     TTextRec(SaveOut) := TTextRec(Output);
@@ -184,6 +187,10 @@ begin
 
     AssignFile(FNPat, FNRes_pat);
     Rewrite(FNPat);
+
+    AssignFile(FNh, FNRes_h);
+    Rewrite(FNh);
+
 
     OutRedir := true;
   end ;
@@ -218,6 +225,9 @@ begin
 
     if TTextRec(FNPat).Mode<>fmClosed then
       Close(FNPat);
+    if TTextRec(FNh).Mode<>fmClosed then
+      Close(FNh);
+
   end ;
 end ;
 

@@ -26,7 +26,8 @@ freely, subject to the following restrictions:
 *)
 interface
 uses
-  Windows, SysUtils, Classes, op, DAsmUtil, DCU_In, DCU_Out, FixUp;
+  Windows, SysUtils, Classes, op, DAsmUtil, DCU_In, DCU_Out, FixUp, TypInfo;
+  //,RTTI;
 
 {$IFNDEF VER90}
  {$IFNDEF VER100}
@@ -34,8 +35,20 @@ uses
  {$ENDIF}
 {$ENDIF}
 
+//more info
+//https://www.plantation-productions.com/Webster/www.artofasm.com/Windows/HTML/ClassesAndObjectsa3.html
+//http://www.blong.com/Conferences/BorConUK98/DelphiRTTI/CB140.htm
+//http://rvelthuis.de/articles/articles-pointers.html#refparams
+
+const
+  conf_verbose = 0;
+
+procedure fileputcontext(fn:string; val:string);
+procedure fileputcontext_raw(fn:string; val:string);
+
 var
   FNPat : TextFile;
+  FNh   : TextFile;
 
 const {My own (AX) codes for Delphi/Kylix versions}
   verD2=2;
@@ -130,16 +143,17 @@ const
 
 const
   {Local flags}
-  lfClass = $1;{class procedure }
+  lfClass = $1;{class procedure } //1
   lfPrivate = $0;
-  lfPublic = $2;
-  lfProtected = $4;
-  lfPublished = $A;
-  lfScope = $0E { $0F};
-  lfDeftProp = $20;
-  lfOverride = $20;
-  lfVirtual = $40;
-  lfDynamic = $80;
+  lfPublic = $2;                  //00000010
+  lfProtected = $4;               //00000100
+  lfPublished = $A;               //00001010
+  lfScope = $0E { $0F};           //00001110 {00001111}
+  lf10       = $10;               //00010000
+  lfDeftProp = $20;               //00100000
+  lfOverride = $20;               //00100000
+  lfVirtual = $40;                //01000000
+  lfDynamic = $80;                //10000000
 
 type
   TProcCallTag=arCDecl..arSafeCall;
@@ -193,7 +207,9 @@ TDCURec = class
   function GetName: PName; virtual; abstract;
   function SetMem(MOfs,MSz: Cardinal): Cardinal {Rest}; virtual;
   procedure ShowName; virtual; abstract;
+  function ShowName2:string; virtual; abstract;
   procedure Show; virtual; abstract;
+  function Show2:string; virtual; abstract;
   property Name: PName read GetName;
 end ;
 
@@ -203,8 +219,11 @@ TBaseDef = class(TDCURec)
   hUnit: integer;
   constructor Create(AName: PName; ADef: PDef; AUnit: integer);
   procedure ShowName; override;
+  function ShowName2:string; override;
   procedure Show; override;
+  function Show2:string; override;
   procedure ShowNamed(N: PName);
+  function ShowNamed2(N: PName):string;
   function GetName: PName; override;
 end ;
 
@@ -231,6 +250,8 @@ TImpTypeDefRec = class(TImpDef{TBaseDef})
   ImpName: PName;
   constructor Create(AName: PName; AnInf: integer; ARTTISz: Cardinal{AL: Byte}; ADef: PDef; AUnit: integer);
   procedure Show; override;
+  function Show2:string; override;
+  //function ShowNamed2(N: PName):string;
   function SetMem(MOfs,MSz: Cardinal): Cardinal {Rest}; override;
 end ;
 
@@ -241,8 +262,11 @@ TNameDecl = class(TDCURec)
   hDecl: integer;
   constructor Create;
   procedure ShowName; override;
+  function ShowName2:string; override;
   procedure Show; override;
+  function Show2:string; override;
   procedure ShowDef(All: boolean); virtual;
+  function ShowDef2(All: boolean):string; virtual;
   function GetName: PName; override;
   function GetSecKind: TDeclSecKind; virtual;
   function IsVisible(LK: TDeclListKind): boolean; virtual;
@@ -253,6 +277,7 @@ TNameFDecl = class(TNameDecl)
   Inf: integer;
   constructor Create;
   procedure Show; override;
+  function Show2:string; override;
   function IsVisible(LK: TDeclListKind): boolean; override;
 end ;
 
@@ -261,6 +286,7 @@ TTypeDecl = class(TNameFDecl)
   constructor Create;
   function IsVisible(LK: TDeclListKind): boolean; override;
   procedure Show; override;
+  function Show2:string; override;
   function SetMem(MOfs,MSz: Cardinal): Cardinal {Rest}; override;
   function GetSecKind: TDeclSecKind; override;
 end ;
@@ -270,6 +296,7 @@ TVarDecl = class(TNameFDecl)
   Ofs: Cardinal;
   constructor Create;
   procedure Show; override;
+  function Show2:string; override;
   function GetSecKind: TDeclSecKind; override;
 end ;
 
@@ -278,6 +305,7 @@ TVarCDecl = class(TVarDecl)
   OfsR: Cardinal;
   constructor Create(OfsValid: boolean);
   procedure Show; override;
+  function Show2:string; override;
   function SetMem(MOfs,MSz: Cardinal): Cardinal {Rest}; override;
   function GetSecKind: TDeclSecKind; override;
 end ;
@@ -287,6 +315,7 @@ TTypePDecl = class(TVarCDecl{TTypeDecl})
   constructor Create;}
   constructor Create;
   procedure Show; override;
+  function Show2:string; override;
   function IsVisible(LK: TDeclListKind): boolean; override;
 end ;
 
@@ -298,6 +327,7 @@ TLabelDecl = class(TNameDecl)
   Ofs: Cardinal;
   constructor Create;
   procedure Show; override;
+  function Show2:string; override;
   function GetSecKind: TDeclSecKind; override;
   function IsVisible(LK: TDeclListKind): boolean; override;
 end ;
@@ -306,6 +336,7 @@ TExportDecl = class(TNameDecl)
   hSym,Index: TNDX;
   constructor Create;
   procedure Show; override;
+  function Show2:string; override;
   function GetSecKind: TDeclSecKind; override;
 end ;
 
@@ -316,6 +347,7 @@ TLocalDecl = class(TNameDecl)
   Ndx: TNDX;
   constructor Create(LK: TDeclListKind);
   procedure Show; override;
+  function Show2:string; override;
   function GetSecKind: TDeclSecKind; override;
 end ;
 
@@ -324,6 +356,7 @@ TMethodDecl = class(TLocalDecl)
   hImport: TNDX; //for property P:X read Proc{virtual,Implemented in parent class}
   constructor Create(LK: TDeclListKind);
   procedure Show; override;
+  function Show2:string; override;
 end ;
 
 {TSetDeft struc pas
@@ -342,11 +375,13 @@ TPropDecl = class(TNameDecl)
   hDeft: TNDX;
   constructor Create;
   procedure Show; override;
+  function Show2:string; override;
   function GetSecKind: TDeclSecKind; override;
 end ;
 
 TDispPropDecl = class(TLocalDecl)
   procedure Show; override;
+  function Show2:string; override;
 end ;
 
 TConstDeclBase = class(TNameFDecl)
@@ -358,7 +393,9 @@ TConstDeclBase = class(TNameFDecl)
   constructor Create;
   procedure ReadConstVal;
   procedure ShowValue;
+  function ShowValue2:string;
   procedure Show; override;
+  function Show2:string; override;
   function GetSecKind: TDeclSecKind; override;
 end ;
 
@@ -382,6 +419,7 @@ TResStrDef = class(TVarCDecl)
   OfsR: Cardinal;
   constructor Create;
   procedure Show; override;
+  function Show2:string; override;
   function GetSecKind: TDeclSecKind; override;
 end ;
 
@@ -389,6 +427,7 @@ TSetDeftInfo=class(TNameDecl{TDCURec, but it should be included into NameDecl li
   hConst,hArg: TDefNDX;
   constructor Create;
   procedure Show; override;
+  function Show2:string; override;
 end ;
 
 (*
@@ -407,6 +446,7 @@ TSysProcDecl = class(TNameDecl{TProcDeclBase})
 //  CodeOfs: Cardinal;
   constructor Create;
   procedure Show; override;
+  function Show2:string; override;
   function GetSecKind: TDeclSecKind; override;
 end ;
 
@@ -432,9 +472,12 @@ TProcDecl = class(TNameFDecl{TProcDeclBase})
   function SetMem(MOfs,MSz: Cardinal): Cardinal {Rest}; override;
   function GetSecKind: TDeclSecKind; override;
   procedure ShowArgs;
+  function ShowArgs2:string;
   function IsProc: boolean;
   procedure ShowDef(All: boolean); override;
+  function ShowDef2(All: boolean):string; override;
   procedure Show; override;
+  function Show2:string; override;
   function IsVisible(LK: TDeclListKind): boolean; override;
 end ;
 
@@ -457,9 +500,12 @@ TTypeDef = class(TBaseDef)
   RTTIOfs: Cardinal;
   constructor Create;
   procedure ShowBase;
+  function ShowBase2:string;
   procedure Show; override;
+  function Show2:string; override;
   function SetMem(MOfs,MSz: Cardinal): Cardinal {Rest}; override;
   function ShowValue(DP: Pointer; DS: Cardinal): integer {Size used}; virtual;
+  function ShowValue2(DP: Pointer; DS: Cardinal;var s:string): integer {Size used}; virtual;
 end ;
 
 TRangeBaseDef = class(TTypeDef)
@@ -470,7 +516,9 @@ TRangeBaseDef = class(TTypeDef)
   B: Byte;
   procedure GetRange(var Lo,Hi: TInt64Rec);
   function ShowValue(DP: Pointer; DS: Cardinal): integer {Size used}; override;
+  function ShowValue2(DP: Pointer; DS: Cardinal; var s:string): integer {Size used}; override;
   procedure Show; override;
+  function Show2:string; override;
 end ;
 
 TRangeDef = class(TRangeBaseDef)
@@ -484,6 +532,7 @@ TEnumDef = class(TRangeBaseDef)
   destructor Destroy; override;
   function ShowValue(DP: Pointer; DS: Cardinal): integer {Size used}; override;
   procedure Show; override;
+  function Show2:string; override;
 end ;
 
 TFloatDef = class(TTypeDef)
@@ -491,6 +540,7 @@ TFloatDef = class(TTypeDef)
   constructor Create;
   function ShowValue(DP: Pointer; DS: Cardinal): integer {Size used}; override;
   procedure Show; override;
+  function Show2:string; override;
 end ;
 
 TPtrDef = class(TTypeDef)
@@ -499,16 +549,19 @@ TPtrDef = class(TTypeDef)
   function ShowRefValue(Ndx: TNDX; Ofs: Cardinal): boolean;
   function ShowValue(DP: Pointer; DS: Cardinal): integer {Size used}; override;
   procedure Show; override;
+  function Show2:string; override;
 end ;
 
 TTextDef = class(TTypeDef)
   procedure Show; override;
+  function Show2:string; override;
 end ;
 
 TFileDef = class(TTypeDef)
   hBaseDT: TNDX;
   constructor Create;
   procedure Show; override;
+  function Show2:string; override;
 end ;
 
 TSetDef = class(TTypeDef)
@@ -517,6 +570,7 @@ TSetDef = class(TTypeDef)
   constructor Create;
   function ShowValue(DP: Pointer; DS: Cardinal): integer {Size used}; override;
   procedure Show; override;
+  function Show2:string; override;
 end ;
 
 TArrayDef = class(TTypeDef)
@@ -526,24 +580,29 @@ TArrayDef = class(TTypeDef)
   constructor Create;
   function ShowValue(DP: Pointer; DS: Cardinal): integer {Size used}; override;
   procedure Show; override;
+  function Show2:string; override;
 end ;
 
 TShortStrDef = class(TArrayDef)
   function ShowValue(DP: Pointer; DS: Cardinal): integer {Size used}; override;
   procedure Show; override;
+  function Show2:string; override;
 end ;
 
 TStringDef = class(TArrayDef)
   function ShowStrConst(DP: Pointer; DS: Cardinal): integer {Size used};
+  function ShowStrConst2(DP: Pointer; DS: Cardinal;var s:string): integer {Size used};
   function ShowRefValue(Ndx: TNDX; Ofs: Cardinal): boolean;
   function ShowValue(DP: Pointer; DS: Cardinal): integer {Size used}; override;
   procedure Show; override;
+  function Show2:string; override;
 end ;
 
 TVariantDef = class(TTypeDef)
   B: byte;
   constructor Create;
   procedure Show; override;
+  function Show2:string; override;
 end ;
 
 TObjVMTDef = class(TTypeDef)
@@ -551,6 +610,7 @@ TObjVMTDef = class(TTypeDef)
   Ndx1: TNDX;
   constructor Create;
   procedure Show; override;
+  function Show2:string; override;
 end ;
 
 TRecBaseDef = class(TTypeDef)
@@ -565,6 +625,7 @@ TRecDef = class(TRecBaseDef)
   constructor Create;
   function ShowValue(DP: Pointer; DS: Cardinal): integer {Size used}; override;
   procedure Show; override;
+  function Show2:string; override;
 end ;
 
 TProcTypeDef = class(TRecBaseDef)
@@ -577,8 +638,11 @@ TProcTypeDef = class(TRecBaseDef)
   function IsProc: boolean;
   function ShowValue(DP: Pointer; DS: Cardinal): integer {Size used}; override;
   function ProcStr: String;
+  function ProcStr2: String;
   procedure ShowDecl(Braces: PChar);
+  function ShowDecl2(Braces: PChar):string;
   procedure Show; override;
+  function Show2:string; override;
 end ;
 
 TObjDef = class(TRecBaseDef)
@@ -590,6 +654,7 @@ TObjDef = class(TRecBaseDef)
   constructor Create;
   function ShowValue(DP: Pointer; DS: Cardinal): integer {Size used}; override;
   procedure Show; override;
+  function Show2:string; override;
 end ;
 
 TClassDef = class(TRecBaseDef)
@@ -614,6 +679,7 @@ TClassDef = class(TRecBaseDef)
   destructor Destroy; override;
   function ShowValue(DP: Pointer; DS: Cardinal): integer {Size used}; override;
   procedure Show; override;
+  function Show2:string; override;
 end ;
 
 TInterfaceDef = class(TRecBaseDef)
@@ -623,10 +689,12 @@ TInterfaceDef = class(TRecBaseDef)
   B: Byte;
   constructor Create;
   procedure Show; override;
+  function Show2:string; override;
 end ;
 
 TVoidDef = class(TTypeDef)
   procedure Show; override;
+  function Show2:string; override;
 end ;
 
 type //AUX, not real file structures
@@ -691,20 +759,36 @@ protected
   function AddAddrDef(ND: TDCURec): integer;
   procedure SetDeclMem(hDef: integer; Ofs,Sz: Cardinal);
 //  procedure AddAddrName(hDef: integer; Name: PName);
+public
   function GetTypeDef(hDef: integer): TTypeDef;
+protected
   function GetTypeName(hDef: integer): PName;
+public
   function GetAddrDef(hDef: integer): TDCURec;
+protected
   function GetAddrName(hDef: integer): PName;
   function GetGlobalTypeDef(hDef: integer; var U: TUnit): TTypeDef;
   function GetGlobalAddrDef(hDef: integer; var U: TUnit): TDCURec;
   function GetTypeSize(hDef: integer): integer;
   function ShowTypeValue(T: TTypeDef; DP: Pointer; DS: Cardinal;
      IsConst: boolean): integer {Size used};
+  function ShowTypeValue2(T: TTypeDef; DP: Pointer; DS: Cardinal;
+     IsConst: boolean; var s:string): integer {Size used};
   function ShowGlobalTypeValue(hDef: TNDX; DP: Pointer; DS: Cardinal;
     AndRest,IsConst: boolean): integer {Size used};
+  function ShowGlobalTypeValue2(hDef: TNDX; DP: Pointer; DS: Cardinal;
+    AndRest,IsConst: boolean; var s:string): integer {Size used};
   function ShowGlobalConstValue(hDef: integer): boolean;
+  function ShowGlobalConstValue2(hDef: integer; var s:string): boolean;
   procedure ShowTypeDef(hDef: integer; N: PName);
+public
+  function ShowTypeDef2(hDef: integer; N: PName):string;
+protected
   function ShowTypeName(hDef: integer): boolean;
+  function ShowTypeName2(hDef: integer; var O:String): boolean;
+  function showtypesize2(hDef: integer; var O:String): integer;
+  function showtypesizeC(Sz: integer): string;
+
   function TypeIsVoid(hDef: integer): boolean;
 {-------------------------}
   function GetUnitImpRec(hUnit: integer): PUnitImpRec;
@@ -722,13 +806,22 @@ protected
   procedure ShowDeclList(LK: TDeclListKind; Decl: TNameDecl; Ofs: Cardinal;
     dScopeOfs: integer; SepF: TDeclSepFlags; ValidKinds: TDeclSecKinds;
     skDefault: TDeclSecKind);
+  function ShowDeclList2(LK: TDeclListKind; Decl: TNameDecl; Ofs: Cardinal;
+    dScopeOfs: integer; SepF: TDeclSepFlags; ValidKinds: TDeclSecKinds;
+    skDefault: TDeclSecKind):string;
+  function ShowDeclList3(LK: TDeclListKind; Decl: TNameDecl; Ofs: Cardinal;
+    dScopeOfs: integer; SepF: TDeclSepFlags; ValidKinds: TDeclSecKinds;
+    skDefault: TDeclSecKind):string;
   function GetStartCodeLine(Ofs: integer): integer;
   procedure GetCodeLineRec(i: integer; var CL: TCodeLineRec);
   function RegTypeShow(T: TBaseDef): boolean;
+  function RegTypeShow2(T: TBaseDef; var O:string): boolean;
   procedure UnRegTypeShow(T: TBaseDef);
+  function UnRegTypeShow2(T: TBaseDef):string;
 //  function RegDataBl(BlSz: Cardinal): Cardinal;
   function GetBlockMem(BlOfs,BlSz: Cardinal; var ResSz: Cardinal): Pointer;
   procedure ShowDataBl(Ofs0,BlOfs,BlSz: Cardinal);
+  function  ShowDataBl2(Ofs0,BlOfs,BlSz: Cardinal):string;
   procedure ShowCodeBl(Ofs0,BlOfs,BlSz: Cardinal;var OutS:string; var OutPat:String);
 public
   constructor Create(FName: String; VerRq: integer);
@@ -744,7 +837,11 @@ public
 //  property fxStart: Byte read FfxStart;
 //  property fxEnd: Byte read FfxEnd;
   property AddrName[hDef: integer]: PName read GetAddrName;
+
+  function ShowDeclArgs2(i: integer):string;
 end ;
+
+
 
 var
   MainUnit: TUnit = Nil;
@@ -756,12 +853,33 @@ uses
   DCUTbl;
 
 const
-  NoName: ShortString='?';
+  NoName: ShortString='_unk';
 
 type
   ulong = Cardinal;
 
   TFileTime = ulong;
+
+function meta_flags(LocFlags: TNDX):string;
+begin
+  result := '';
+  if conf_verbose < 10 then
+     exit;
+  //if LocFlags and lfPrivate   <> 0  then result+='private;';
+  if LocFlags and lfClass     <> 0  then result+='classproc;';
+  if LocFlags and lfPublic    <> 0  then result+='public;';
+  if LocFlags and lfProtected <> 0  then result+='protected;';
+  if LocFlags and lfPublished <> 0  then result+='published;';
+  if LocFlags and lfScope     <> 0  then result+='Scope;';
+  if LocFlags and lf10        <> 0  then result+='lf10;';
+  if LocFlags and lfDeftProp  <> 0  then result+='DeftProp;';
+  if LocFlags and lfOverride  <> 0  then result+='Override;';
+  if LocFlags and lfVirtual   <> 0  then result+='Virtual;';
+  if LocFlags and lfDynamic   <> 0  then result+='Dynamic;';
+  if (LocFlags<>0) then
+    result += Format('LocFlags:%x ',[LocFlags]);
+end;
+
 
 procedure FreeDCURecList(L: TDCURec);
 var
@@ -906,6 +1024,32 @@ begin
   end ;
 end ;
 
+function TBaseDef.ShowName2:string;
+var
+  U: PUnitImpRec;
+  NP: PName;
+begin
+  result := '';
+  NP := FName;
+  if (NP=Nil)or(NP^[0]=#0) then
+    NP := @NoName;
+  if hUnit<0 then begin
+    if NP^[0]<>#0 {Temp.} then
+     //PutS(GetDCURecStr(Self,-1{dummy - won't be used},false));
+     result+=PutS_pat(GetDCURecStr(Self,-1{dummy - won't be used},false));
+   end
+  else begin
+    U := PUnitImpRec(CurUnit.FUnitImp[hUnit]);
+    PutSFmt('%s.%s',[U^.Name^,NP^]);
+    if ((AnsiCompareText (U^.Name^,'System') = 0) or(AnsiCompareText (U^.Name^,'SysUtils') = 0) ) then
+       result += PutSFmt_pat('%s',[NP^])
+    else
+    result += PutSFmt_pat('%s.%s',[U^.Name^,NP^]);
+
+  end ;
+end ;
+
+
 procedure TBaseDef.Show;
 var
   NP: PName;
@@ -916,6 +1060,18 @@ begin
   PutS(NP^);
 //  PutS('?');
 //  ShowName;
+end ;
+
+function TBaseDef.Show2:string;
+var
+  NP: PName;
+begin
+  result := '';
+  NP := FName;
+  if (NP=Nil)or(NP^[0]=#0) then
+    NP := @NoName;
+  //PutS(NP^);
+  result += NP^;
 end ;
 
 procedure TBaseDef.ShowNamed(N: PName);
@@ -934,6 +1090,25 @@ begin
   else
     ShowName;
 end ;
+
+function TBaseDef.ShowNamed2(N: PName):string;
+begin
+  result := '';
+  if ((N<>Nil)and(N=FName)or(FName=Nil)or(FName^[0]=#0)or
+      (not ShowDotTypes and(FName^[1]='.')and(Self is TTypeDef)))
+    and CurUnit.RegTypeShow2(Self, result)
+    {if RegTypeShow fails the type name will be shown instead of its
+     definition}
+  then
+    try
+      result += Show2;
+    finally
+      result += CurUnit.UnRegTypeShow2(Self)
+    end
+  else
+    result += ShowName2;
+end ;
+
 
 function TBaseDef.GetName: PName;
 begin
@@ -993,7 +1168,7 @@ procedure TImpTypeDefRec.Show;
 var
   U: PUnitImpRec;
 begin
-  PutS('type'+cSoftNL);
+  PutS('typ2'+cSoftNL);
 //  ShowName;
   if hImpUnit>=0 then begin
     U := PUnitImpRec(CurUnit.FUnitImp[hImpUnit]);
@@ -1013,6 +1188,34 @@ begin
     Dec(AuxLevel);
   end ;
 end ;
+
+function TImpTypeDefRec.Show2:string;
+var
+  U: PUnitImpRec;
+begin
+  result:='';
+  result+=PutS_pat('/*typ2*/ ');
+//  ShowName;
+  if hImpUnit>=0 then begin
+    //U := PUnitImpRec(CurUnit.FUnitImp[hImpUnit]);
+    //result+=PutS_pat(U^.Name^);
+    //result+=PutS_pat('.');
+  end ;
+  ImpName^[1] := UpCase(ImpName^[1]);
+  result+=PutS_pat(ImpName^);
+//  PutSFmt('[%d]',[L]);
+  if RTTISz>0 then begin
+    Inc(AuxLevel);
+    result+=PutS_pat('/* RTTI: ');
+    Inc(NLOfs,2);
+    //NL;
+    //result+=CurUnit.ShowDataBl2(0,RTTIOfs,RTTISz);
+    Dec(NLOfs,2);
+    result+=PutS_pat('*/');
+    Dec(AuxLevel);
+  end ;
+end ;
+
 
 function TImpTypeDefRec.SetMem(MOfs,MSz: Cardinal): Cardinal {Rest};
 begin
@@ -1042,6 +1245,12 @@ procedure TNameDecl.ShowName;
 begin
   PutS(GetDCURecStr(Self,hDecl,false));
 end ;
+
+function TNameDecl.ShowName2:string;
+begin
+  result := PutS_pat(GetDCURecStr(Self,hDecl,false));
+end ;
+
 {var
   N: PName;
 begin
@@ -1058,9 +1267,20 @@ begin
   ShowName;
 end ;
 
+function TNameDecl.Show2:string;
+begin
+  result := ShowName2;
+end ;
+
+
 procedure TNameDecl.ShowDef(All: boolean);
 begin
   Show;
+end ;
+
+function TNameDecl.ShowDef2(All: boolean):string;
+begin
+  result := Show2;
 end ;
 
 function TNameDecl.GetName: PName;
@@ -1100,6 +1320,18 @@ begin
   Dec(AuxLevel);
 end ;
 
+function TNameFDecl.Show2:string;
+begin
+  result := '';
+  result+= inherited Show2;
+  Inc(AuxLevel);
+  //PutSFmt('{%x,%x}',[F,Inf]);
+
+  //not show typeN and hex offset
+  //result += PutSFmt_pat('/*%x,%x*/',[F,Inf]);
+  Dec(AuxLevel);
+end ;
+
 function TNameFDecl.IsVisible(LK: TDeclListKind): boolean;
 begin
   case LK of
@@ -1135,6 +1367,7 @@ end ;
 procedure TTypeDecl.Show;
 var
   RefName: PName;
+  var s:string;
 begin
 //  PutS('type ');
   inherited Show;
@@ -1155,6 +1388,101 @@ begin
   CurUnit.ShowTypeDef(hDef,RefName);
 //  PutSFmt('{#%x}',[hDef])
 end ;
+
+function TTypeDecl.Show2:string;
+var
+  RefName: PName;
+  D: TDCURec;{TBaseDef}
+  Value: Integer;
+begin
+//  PutS('type ');
+  result := '';
+  if (Def=Nil) then
+    RefName := Nil
+  else
+    RefName := @Def^.Name;
+
+  if TryStrToInt(RefName^,Value) then begin
+    //Def^.Name := 'ti_' + Def^.Name;
+    RefName^ := 'ti_' + RefName^;
+  end;
+
+  D := CurUnit.GetTypeDef(hDef);
+  if ((D<>nil) and (D is TEnumDef)) then begin
+    if (TEnumDef(D).NameTbl = nil) then begin
+      result += '/*TRANGEBASEDEF*/ typedef ';
+    end
+    else
+      result += '/*ENUM*/ ';
+  end;
+  if ((D<>nil) and (D is TSetDef)) then begin
+    result += '/*TSETDEF*/ typedef ';
+  end;
+  if ((D<>nil) and (D is TRangeDef)) then begin
+    result += '/*RANGE*/ typedef ';
+  end;
+  if ((D<>nil) and (D is TProcTypeDef)) then begin
+    result += '/*TPROCTYPEDEF*/ typedef ';
+  end;
+
+  if ((D<>nil) {and (Self is TTypeDecl)}) then begin
+    if (RefName^ = 'TComponentName') then
+        result += '/**/ ';
+  end;
+
+  if ((D<>nil) and (D is TPtrDef)) then begin
+    result += '/*TPrtDef*/ typedef ';
+  end;
+
+  if ((D<>nil) and (D is TArrayDef)) then begin
+    result += '/*TArrayDef*/ typedef ';
+  end;
+  if ((D<>nil) and (D is TObjVMTDef)) then begin
+    result += '/*TObjVMTDef*/ typedef ';
+  end;
+  if ((D<>nil) and (D is TRecDef)) then begin
+    result += '/*TRecDef*/ ';
+  end;
+  if ((D<>nil) and (D is TImpTypeDefRec)) then begin
+    result += '/*TImpTypeDefRec*/ typedef ';
+  end;
+
+  result += CurUnit.ShowTypeDef2(hDef,RefName);
+
+  result += ' ';
+  if ((D<>nil) and (D is TEnumDef)) then begin
+    if (TEnumDef(D).NameTbl = nil) then begin
+      result += inherited Show2;
+    end;
+  end;
+  if ((D<>nil) and (D is TSetDef)) then begin
+    result += inherited Show2;
+  end;
+  if ((D<>nil) and (D is TRangeDef)) then begin
+    result += inherited Show2;
+    result += '';
+  end;
+  if ((D<>nil) and (D is TPtrDef)) then begin
+    result += inherited Show2;
+    result += '';
+  end;
+  if ((D<>nil) and (D is TObjVMTDef)) then begin
+    result += inherited Show2;
+  end;
+  if ((D<>nil) and (D is TImpTypeDefRec)) then begin
+    //result += inherited Show2;
+    //result += TImpTypeDefRec(D).Show2;
+    result += TBaseDef(D).ShowNamed2(Nil);
+  end;
+
+  if conf_verbose > 50 then begin
+    result += '/* struct3 ';
+    result += inherited Show2;
+    result += '('+Self.ClassName+')';
+    result += '*/ ';
+  end;
+end ;
+
 
 function TTypeDecl.SetMem(MOfs,MSz: Cardinal): Cardinal {Rest};
 var
@@ -1187,6 +1515,14 @@ begin
 //  PutSFmt('{B1:%x}',[B1]);
   PutS(',VMT');
 end ;
+
+function TTypePDecl.Show2:string;
+begin
+  result:='';
+  result+=inherited Show2;
+  result += PutS_pat(#13#10'//,VMT');
+end ;
+
 
 function TTypePDecl.IsVisible(LK: TDeclListKind): boolean;
 begin
@@ -1221,6 +1557,40 @@ begin
   PutSFmt('{Ofs:0x%x}',[Ofs]);
   Dec(AuxLevel);
 end ;
+
+function TVarDecl.Show2:string;
+begin
+  result:='';
+  if self.ClassType = TVarDecl then begin
+     if conf_verbose > 10 then
+        result += '/*TVARDECL*/';
+     result+=CurUnit.ShowTypeDef2(hDT,Nil) + ' ';
+     result+=inherited Show2;
+     exit;
+  end;
+
+  if conf_verbose > 10 then
+     result += '/*('+Self.ClassName+')*/';
+
+  result+='struct/*2*/ ';
+  if (Name^ = 'RegisterComponentsProc') or (Name^ = '.EStreamError') then
+         result+='';
+  //if def <> nil then
+  //   result+=Def^.Name;
+  result+=inherited Show2;
+  result+=PutS_pat(' {');{': '}
+
+  result+='//'+CurUnit.ShowTypeDef2(hDT,Nil);
+
+  if conf_verbose > 10 then begin
+    Inc(AuxLevel);
+    result+=PutSFmt_pat('/*OfsDCU:0x%x*/',[Ofs]);
+    result+=PutS_pat('/*;}4*/');
+    Dec(AuxLevel);
+  end;
+  result+=PutS_pat(';/*4*/');
+end ;
+
 
 function TVarDecl.GetSecKind: TDeclSecKind;
 begin
@@ -1278,6 +1648,46 @@ begin
   Dec(NLOfs,2);
 end ;
 
+
+function TVarCDecl.Show2:string;
+var
+  DP: Pointer;
+  {SzShown: integer;}
+  DS: Cardinal;
+var
+  Fix0: integer;
+  MS: TFixupMemState;
+begin
+  result:='';
+  result+=inherited Show2;
+  Inc(NLOfs,2);
+
+  if conf_verbose > 10 then
+     result+=PutS_pat(' /*=3*/');
+
+  if Sz=Cardinal(-1) then
+    result+=PutS_pat(' ?')
+  else begin
+    DP := Nil;
+    if ResolveConsts then begin
+      DP := CurUnit.GetBlockMem(Ofs,Sz,DS);
+      if DP<>Nil then begin
+        SaveFixupMemState(MS);
+        SetCodeRange(CurUnit.FDataBlPtr,DP,DS);
+        Fix0 := CurUnit.GetStartFixup(Ofs);
+        SetFixupInfo(CurUnit.FFixupCnt-Fix0,@CurUnit.FFixupTbl^[Fix0],CurUnit);
+      end ;
+    end ;
+    //CurUnit.ShowGlobalTypeValue(hDT,DP,DS,true,false);
+    CurUnit.ShowGlobalTypeValue2(hDT,DP,DS,true,false,result);
+    result += #13#10'/*5*/};';
+    if DP<>Nil then
+      RestoreFixupMemState(MS);
+  end ;
+  Dec(NLOfs,2);
+end ;
+
+
 function TVarCDecl.SetMem(MOfs,MSz: Cardinal): Cardinal {Rest};
 begin
   Result := 0;
@@ -1317,6 +1727,15 @@ begin
   inherited Show;
   PutSFmt('{at $%x}',[Ofs]);
 end ;
+
+function TLabelDecl.Show2:string;
+begin
+  result:='';
+  result+=inherited Show2;
+  //PutSFmt('{at $%x}',[Ofs]);
+  result+= PutSFmt_pat('{at $%x}',[Ofs]);
+end ;
+
 
 function TLabelDecl.GetSecKind: TDeclSecKind;
 begin
@@ -1363,6 +1782,35 @@ begin
   end ;
   if Index<>0 then
     PutSFmt(cSoftNL+'index $%x',[Index]);
+  Dec(NLOfs,2);
+end ;
+
+function TExportDecl.Show2:string;
+var
+  D: TDCURec;
+  N: PName;
+begin
+  result:='';
+  D := CurUnit.GetAddrDef(hSym);
+  N := Nil;
+  if D=Nil then
+    //PutS('?')
+    result+=PutS_pat('?')
+  else begin
+    //D.ShowName;
+    result+=D.ShowName2;
+    N := D.Name;
+  end ;
+  Inc(NLOfs,2);
+  if (N<>Nil)and(Name<>Nil)and(N^<>Name^) then begin
+    //PutS(cSoftNL+'name'+cSoftNL);
+    result+=PutS_pat(cSoftNL+'name'+cSoftNL);
+    //ShowName;
+    result+=ShowName2;
+  end ;
+  if Index<>0 then
+    //PutSFmt(cSoftNL+'index $%x',[Index]);
+    result+=PutSFmt_pat(cSoftNL+'index $%x',[Index]);
   Dec(NLOfs,2);
 end ;
 
@@ -1468,6 +1916,86 @@ begin
     PutSFmt(' absolute %s',[CurUnit.GetAddrStr(integer(Ndx),false)]);
 end ;
 
+
+function TLocalDecl.Show2:string;
+const
+{Register, where register variable is located,
+ I am not sure that it is valid for smaller than 4 bytes variables}
+  RegName: array[0..6] of String[3] =
+    ('EAX','EDX','ECX','EBX','ESI','EDI','EBP');
+var
+  RefName: PName;
+  MS: String;
+begin
+  result := '';
+  MS := '';
+  if ShowAuxValues then
+   case Def^.Tag of
+     arVal: MS := 'val '; //'val ';
+     arVar: MS := 'var ';
+     drVar: MS := 'local ';
+     arResult: MS := 'result ';
+     arAbsLocVar: MS := 'local absolute ';
+     arFld: MS := 'field ';
+     {arMethod: MS := 'method';
+     arConstr: MS := 'constructor';
+     arDestr: MS := 'destructor';}
+   end
+  else
+   case Def^.Tag of
+//     arVar,drVar,arAbsLocVar: MS := 'var ';
+     arVar: MS := 'var ';
+     arResult: MS := 'result ';
+   end ;
+
+  if MS<>'' then
+     if (MS='val ') and (conf_verbose > 10) then
+        result+='/*'+PutS_pat(MS)+'*/';
+
+  //result+=inherited Show2;
+  //result+=PutS_pat(': ');
+  //CurUnit.ShowTypeDef(hDT,Nil);
+
+  if ((MS='field ') or (MS='val ') or (MS='var ')) then begin
+    result+=CurUnit.ShowTypeDef2(hDT,Nil);
+  end else
+    result+= '';
+
+  //c++
+  result+=PutS_pat(' ');
+
+  Inc(AuxLevel);
+
+  if conf_verbose > 10 then begin
+    result+=PutSFmt_pat('/*%sOfs1:%x',[meta_flags(LocFlags),integer(Ndx)]);
+    if (LocFlags and $8<>0 {register})and(Def^.Tag<>arFld) then begin
+      if (Ndx>=Low(RegName))and(Ndx<=High(RegName)) then
+       result+=PutSFmt_pat('=%s',[RegName[Ndx]])
+      else
+        result+=PutS_pat('=?')
+    end ;
+    if NDXB<>-1 then
+      result +=PutSFmt_pat(' NDXB:%x',[NDXB]);
+    result +=PutS_pat('*/');
+  end;
+
+
+  if (Def^.Tag=arVar) then begin
+    result += '*';
+    if conf_verbose > 10 then
+      result += '/*arVar*/';
+  end;
+
+  Dec(AuxLevel);
+
+  //c++
+  result+=inherited Show2;
+
+  if Def^.Tag=arAbsLocVar then
+   result +=PutSFmt_pat(' absolute %s',[CurUnit.GetAddrStr(integer(Ndx),false)]);
+end ;
+
+
 function TLocalDecl.GetSecKind: TDeclSecKind;
 begin
   if Def^.Tag in [arFld, arMethod, arConstr, arDestr, arProperty] then
@@ -1512,7 +2040,7 @@ var
 
 begin
   if LocFlags and lfClass<>0 then
-    PutS('class ');
+    PutS('class '); {never caller for classes.dcu}
   PD := Nil;
   if ResolveMethods then begin
     D := CurUnit.GetAddrDef(Ndx);
@@ -1588,6 +2116,115 @@ begin
   end ;
 end ;
 
+
+function TMethodDecl.Show2:string;
+var
+  MS: String;
+  D: TDCURec;
+  PD: TProcDecl absolute D;
+
+  procedure ShowFlags2;
+  begin
+    Inc(AuxLevel);
+    result+=PutSFmt_pat('/*%shDT:%x*/ ',[meta_flags(LocFlags),hDT]);
+    if (Name^[0]=#0)and(hImport<>0) then
+      result+=PutSFmt_pat('/*hImp: #%x*/ ',[hImport]);
+    Dec(AuxLevel);
+  end ;
+
+begin
+  result := '';
+  if LocFlags and lfClass<>0 then
+    result+=PutS_pat('class '); {never caller in classes.pas}
+  PD := Nil;
+  if ResolveMethods then begin
+    D := CurUnit.GetAddrDef(Ndx);
+    if (D<>Nil)and not(D is TProcDecl) then
+      D := Nil;
+    if D<>Nil then
+      TProcDecl(D).IsMethod := true;
+  end ;
+  MS := '';
+  case Def^.Tag of
+    arMethod: begin
+      if PD=Nil then
+        MS := #13#10'//method '
+      else if PD.IsProc then
+        MS := #13#10'///*procedure*/ '
+      else
+        MS := #13#10'///*function*/ ';
+    end ;
+    arConstr: MS := #13#10'//constructor ';
+    arDestr: MS := #13#10'//destructor ';
+  end ;
+  if not InIntrf then begin
+
+    if MS<>'' then
+      result+=PutS_pat(MS);
+
+    //function result
+    if (D<>Nil)and(D is TProcDecl) then begin
+       if (TProcDecl(D).hDTRes <> 0) then begin
+          result+= StringReplace(CurUnit.ShowTypeDef2(TProcDecl(D).hDTRes,Nil) , '/System.','/',[rfIgnoreCase]);
+          result+=' ';
+       end;
+    end;
+
+    result+=ShowName2;
+    if PD=Nil then
+      result+=PutS_pat(': ');
+    ShowFlags2;
+    if PD<>Nil then begin
+      result+=PutSFmt_pat('/*%x*/',[Ndx]);
+      result+=PD.ShowArgs2;
+     end
+    else
+      result+=PutS_pat(CurUnit.GetAddrStr(Ndx,true));
+    Inc(NLOfs,2);
+    if LocFlags and lfOverride<>0 then
+      result+=PutS_pat(';'+cSoftNL+'override{');
+    if LocFlags and lfVirtual<>0 then
+      result+=PutS_pat(';'+cSoftNL+'virtual');
+    if LocFlags and lfDynamic<>0 then
+      result+=PutS_pat(';'+cSoftNL+'dynamic');
+    if LocFlags and lfOverride<>0 then
+      result+=PutS_pat('}');
+    Dec(NLOfs,2);
+   end
+  else begin
+    if MS<>'' then begin
+      Inc(AuxLevel);
+      result+=PutS_pat(MS);
+      Dec(AuxLevel);
+    end ;
+    D := CurUnit.GetTypeDef(NDX);
+    if (D<>Nil)and(D is TProcTypeDef) then begin
+      Inc(AuxLevel);
+
+      if (conf_verbose > 10) then
+            result+=PutSFmt_pat('/*T#%x*/',[hDT]);
+
+      Dec(AuxLevel);
+      result+=PutS_pat(TProcTypeDef(D).ProcStr2);
+      result+=PutS_pat(' ');
+      result+=ShowName2;
+      result+=#13#10;
+      result+=TProcTypeDef(D).ShowDecl2(Nil);
+      ShowFlags2;
+     end
+    else begin
+      result+=ShowName2;
+      result+=PutS_pat(': ');
+      ShowFlags2;
+      result+=CurUnit.ShowTypeDef2(Ndx,Name);
+    end ;
+  end ;
+
+  if (conf_verbose = 0) then
+     result := '';
+end ;
+
+
 { TPropDecl. }
 constructor TPropDecl.Create;
 begin
@@ -1656,6 +2293,64 @@ begin
   Dec(NLOfs,2);
 end ;
 
+
+function TPropDecl.Show2:string;
+
+  procedure PutOp2(Name: String; hOp: TNDX);
+  var
+    V: String;
+  begin
+    if hOp=0 then
+      Exit;
+    V := CurUnit.GetAddrStr(hOp,true);
+    result+=PutSFmt_pat('%s %s',[Name,V])
+  end ;
+
+var
+  D: TBaseDef;
+begin
+  result:=#13#10 + '//';
+  if (conf_verbose > 10) then
+    result+=PutS_pat('/*property*/');
+
+  result+=inherited Show2;
+  Inc(NLOfs,2);
+  if hDT<>0 then begin
+   {hDT=0 => inherited and something overrided}
+    D := CurUnit.GetTypeDef(hDT);
+    if (D<>Nil)and(D is TProcTypeDef)and(D.FName=Nil) then begin
+      {array property}
+      Inc(AuxLevel);
+      if (conf_verbose > 10) then
+         result+=PutSFmt_pat('/*T#%x*/',[hDT]);
+      Dec(AuxLevel);
+      Dec(NLOfs,2);
+      result+=TProcTypeDef(D).ShowDecl2('[]');
+      Inc(NLOfs,2);
+     end
+    else begin
+      result+=CurUnit.ShowTypeDef2(hDT,Nil);
+    end
+  end ;
+  if hIndex<>TNDX($80000000) then
+    result+=PutSFmt_pat('index $%x',[hIndex]);
+  PutOp2('read',hRead);
+  PutOp2('write',hWrite);
+  PutOp2('stored',hStored);
+  if hDeft<>TNDX($80000000) then
+    result+=PutSFmt_pat('default $%x',[hDeft]);
+  Inc(AuxLevel);
+  //result+=#13#10;
+  result+=PutSFmt_pat('/*%s,Ndx:#%x*/',[meta_flags(LocFlags),Ndx]);
+  Dec(AuxLevel);
+  if LocFlags and lfDeftProp<>0 then
+    result+=PutS_pat('; default');
+  Dec(NLOfs,2);
+
+  //if (conf_verbose = 0) then
+  //   result:=#13#10 + '//';
+end ;
+
 function TPropDecl.GetSecKind: TDeclSecKind;
 begin
   case LocFlags and lfScope of
@@ -1691,6 +2386,33 @@ begin
   PutsFmt(cSoftNL+'dispid $%x',[integer(Ndx)]);
   Dec(NLOfs,2);
 end ;
+
+
+{ TDispPropDecl. }
+function TDispPropDecl.Show2:string;
+begin
+  result:='';
+  result+=PutS_pat('property2 ');
+  result+=ShowName2;
+  Inc(NLOfs,2);
+  result+=PutS_pat(':');
+  result+=CurUnit.ShowTypeDef2(hDT,Nil);
+  Inc(AuxLevel);
+  result+=PutSFmt_pat('/*%s',[meta_flags(LocFlags)]);
+  if NDXB<>-1 then
+    result+=PutSFmt_pat(' NDXB:%x',[NDXB]);
+  PutS('*/');
+  Dec(AuxLevel);
+  if NDXB<>-1 then begin
+    case NDXB and $6 of
+      $2: result+=PutS_pat(' readonly');
+      $4: result+=PutS_pat(' writeonly');
+    end ;
+  end ;
+  result+=PutsFmt_pat('dispid $%x',[integer(Ndx)]);
+  Dec(NLOfs,2);
+end ;
+
 
 { TConstDeclBase. }
 constructor TConstDeclBase.Create;
@@ -1738,6 +2460,33 @@ begin
     PutSFmt('(%s)',[NDXToStr(V.Lo)]);
   end ;
 end ;
+
+function TConstDeclBase.ShowValue2:string;
+var
+  DP: Pointer;
+  DS: Cardinal;
+  V: TInt64Rec;
+  MemVal: boolean;
+begin
+  result := '';
+  if ValPtr=Nil then begin
+    V.Hi := ValSz;
+    V.Lo := Val;
+    DP := @V;
+    DS := 8;
+   end
+  else begin
+    DP := ValPtr;
+    DS := ValSz;
+  end ;
+  MemVal := ValPtr<>Nil;
+  if (CurUnit.ShowGlobalTypeValue2(hDT,DP,DS,MemVal,true, result)<0)and not MemVal then begin
+    //CurUnit.ShowTypeName2(hDT, result);
+    NDXHi := V.Hi;
+    result+= PutSFmt_pat('%s',[NDXToStr2(V.Lo)]);
+  end ;
+end ;
+
 
 procedure TConstDeclBase.Show;
 var
@@ -1795,6 +2544,41 @@ begin
   *)
 end ;
 
+
+function TConstDeclBase.Show2:string;
+var
+  RefName: PName;
+  TypeNamed: boolean;
+begin
+  result:='';
+
+  Inc(AuxLevel);
+  if AuxLevel<=0 then begin
+     //result += PutS_pat('/*');
+     result+=CurUnit.showtypesizeC(CurUnit.showtypesize2(hDT, result));
+     CurUnit.ShowTypeName2(hDT, result);
+     //result += PutS_pat('*/');
+  end ;
+  Dec(AuxLevel);
+
+  Inc(NLOfs,2);
+  //PutS(' ');
+  result += ' ';
+  result += inherited Show2;
+
+  if conf_verbose > 10 then
+     result += PutS_pat('/*=2*/');
+  result += ' = ';
+
+  Inc(AuxLevel);
+  if (CurUnit.Ver>verD4)and(hX<>0{It is almost always=0}) then
+     result += PutSFmt_pat('/*X:#%x*/',[hX]);
+  Dec(AuxLevel);
+  result += ShowValue2;
+  Dec(NLOfs,2);
+end ;
+
+
 function TConstDeclBase.GetSecKind: TDeclSecKind;
 begin
   Result := skConst;
@@ -1826,6 +2610,18 @@ begin
   CurUnit.ShowGlobalConstValue(hDecl+1);
   Dec(NLOfs,2);
 end ;
+
+function TResStrDef.Show2:string;
+begin
+  result:='';
+  result+=inherited Show2; //The reference to HInstance will be shown
+  Inc(NLOfs,2);
+  //SoftNL;
+  result+=#13#10;
+  CurUnit.ShowGlobalConstValue2(hDecl+1,result);
+  Dec(NLOfs,2);
+end ;
+
 
 function TResStrDef.GetSecKind: TDeclSecKind;
 begin
@@ -1892,6 +2688,17 @@ begin
   CurUnit.ShowGlobalConstValue(hConst);
   Dec(NLOfs,2);
 end ;
+
+
+function TSetDeftInfo.Show2:string;
+begin
+  result:='';
+  Inc(NLOfs,2);
+  result+=PutSFmt_pat('Let %s :='+cSoftNL,[CurUnit.GetAddrStr(hArg,false)]);
+  CurUnit.ShowGlobalConstValue2(hConst, result);
+  Dec(NLOfs,2);
+end ;
+
 (*
 { TProcDeclBase. }
 constructor TProcDeclBase.Create;
@@ -1943,6 +2750,16 @@ begin
 
 //  CurUnit.ShowDataBl(CodeOfs,Sz);
 end ;
+
+
+function TSysProcDecl.Show2:string;
+begin
+  result:='';
+  result+=PutS_pat('sysproc ');
+  result+=inherited Show2;
+  result+=PutSFmt_pat('{#%x}',[F]);
+end ;
+
 
 { TProcDecl. }
 
@@ -2070,6 +2887,54 @@ begin
   if (CurUnit.Ver>verD3)and(VProc and $1000 <> 0) then begin
     PutS(';'+cSoftNL);
     PutS('overload');
+  end ;
+  NLOfs := Ofs0;
+end ;
+
+function TProcDecl.ShowArgs2:string;
+var
+  NoName: boolean;
+  Ofs0: Cardinal;
+begin
+  result:='';
+  NoName := IsUnnamed;
+  Inc(AuxLevel);
+
+  if (conf_verbose > 10) then begin
+    if (B0<>0) then
+       result+=PutSFmt_pat('/*B0:%x,Sz:%x',[B0,Sz]) else
+       result+=PutSFmt_pat('/*Sz:%x',[Sz]);
+
+    if not NoName then begin
+      if CurUnit.Ver>verD2 then
+        result+=PutSFmt_pat(',VProc:%x',[VProc]);
+    end ;
+    result+=PutS_pat('*/');
+  end;
+
+  Dec(AuxLevel);
+  Ofs0 := NLOfs;
+  Inc(NLOfs,2);
+
+  if not IsProc then begin
+    //result+=PutS_pat(':');
+    //result+=CurUnit.ShowTypeDef2(hDTRes,Nil);
+  end ;
+
+    result+=PutS_pat('(');
+  if Args<>Nil then
+  result+=CurUnit.ShowDeclList2(dlArgs,Args,Ofs0,2,[dsComma,dsNoFirst],
+    ProcSecKinds,skNone);
+  NLOfs := Ofs0+2;
+  //if Args<>Nil then
+  result+=PutS_pat(')');
+  if CallKind<>pcRegister then begin
+    result+=PutS_pat(';');
+    result+=PutS_pat(CallKindName[CallKind]);
+  end ;
+  if (CurUnit.Ver>verD3)and(VProc and $1000 <> 0) then begin
+    result+=PutS_pat(';');
+    result+=PutS_pat('overload');
   end ;
   NLOfs := Ofs0;
 end ;
@@ -2207,10 +3072,78 @@ begin
   end ;
 end ;
 
+
+function TProcDecl.ShowDef2(All: boolean):string;
+var
+  Ofs0: Cardinal;
+  OutS: string;
+  OutPat:String;
+  plen:integer;
+  //slen:integer;
+  i,en,nr:integer;
+  test:string;
+  t:PChar;
+  w:word;
+  //HexStr,h:string;
+
+  //c16:word;
+  //cl:word;
+begin
+  result:='';
+  if conf_verbose > 10 then begin
+    if IsProc then
+      result+=PutS_pat('/*procedure1*/ ')
+    else
+      result+=PutS_pat('/*function1*/ ');
+  end;
+
+  //function result
+  if (IsProc) then
+    result+='/*5*/void '
+  else if (hDTRes <> 0) then begin
+    result+= StringReplace(CurUnit.ShowTypeDef2(hDTRes,Nil) , '/System.','/',[rfIgnoreCase]);
+    result+=' ';
+  end;
+
+
+  result+=inherited Show2;
+  if Def^.Name[0]=#0 then
+    result+=PutS_pat('?');
+  result+=ShowArgs2;
+
+  if All then begin
+    Ofs0 := NLOfs;
+    result+=PutS_pat(';');
+    if Locals<>Nil then
+      result+=CurUnit.ShowDeclList2(dlEmbedded,Locals,Ofs0{+2},2,[dsLast,dsOfsProc],
+        BlockSecKinds,skNone);
+    if Embedded<>Nil then
+      result+=CurUnit.ShowDeclList2(dlEmbedded,Embedded,Ofs0{+2},2,[dsLast,dsOfsProc],
+        BlockSecKinds,skNone);
+//    PutS('; ');
+    NLOfs := Ofs0;
+    result+=#13#10;
+    result+=PutS_pat('begin');
+    NLOfs := Ofs0+2;
+    //result+=CurUnit.ShowCodeBl(AddrBase,CodeOfs,Sz, OutS, OutPat);
+    result+='###ShowCodeBl###';
+
+    NLOfs := Ofs0;
+    result+=#13#10;
+    result+=PutS_pat('end');
+  end ;
+end ;
+
 procedure TProcDecl.Show;
 begin
   ShowDef(true);
 end ;
+
+function TProcDecl.Show2:string;
+begin
+  result:=ShowDef2(true);
+end ;
+
 
 function TProcDecl.IsVisible(LK: TDeclListKind): boolean;
 begin
@@ -2270,10 +3203,63 @@ begin
   end ;
 end ;
 
+
+function meta(Sz:TNDX;RTTIsz:TNDX;V:TNDX):string;
+begin
+  result :='';
+  //if (conf_verbose > 50) then begin
+    result += PutSFmt_pat('Sz:%x',[Sz]);
+    if (RTTISz <> 0) then result += PutSFmt_pat(',RTTISz:%x',[RTTISz]);
+    if (V <> 0) then result += PutSFmt_pat(',V:%x',[V]);
+  //end;
+end;
+
+
+function meta1(Sz:TNDX;RTTIsz:TNDX;V:TNDX):string;
+begin
+  result := '';
+  if (conf_verbose > 50) then begin
+    result +='/*';
+    result += meta(Sz,RTTIsz, V);
+    result += '*/';
+  end;
+end;
+
+function TTypeDef.ShowBase2:string;
+begin
+  result := '';
+  Inc(AuxLevel);
+  result += meta1(Sz,RTTISz,V);
+  Dec(AuxLevel);
+  if RTTISz>0 then begin
+    Inc(AuxLevel);
+    //No {RTTI:
+    //PutS('{ RTTI: ');
+    //result += '{ RTTI: ';
+    Inc(NLOfs,2);
+    //result +=#13#10
+
+    // no RTTI block
+    //result += CurUnit.ShowDataBl2(0,RTTIOfs,RTTISz);
+
+    Dec(NLOfs,2);
+    //PutS('}');
+    //result += '}';
+    Dec(AuxLevel);
+  end ;
+end ;
+
+
 procedure TTypeDef.Show;
 begin
   ShowBase;
 end ;
+
+function TTypeDef.Show2:string;
+begin
+  result := ShowBase2;
+end ;
+
 
 function TTypeDef.SetMem(MOfs,MSz: Cardinal): Cardinal {Rest};
 begin
@@ -2301,6 +3287,24 @@ begin
   OutS := '';
   ShowDump(DP,0,Sz,0,0,0,0,Nil,false, OutS, OutP);
 end ;
+
+function TTypeDef.ShowValue2(DP: Pointer; DS: Cardinal;var s:string): integer {Size used};
+var
+  OutS: String;
+  OutP: String;
+begin
+  if Sz>DS then begin
+    Result := -1;
+    Exit;
+  end ;
+  Result := Sz;
+  //NL;
+  s+=#13#10;
+  OutS := '';
+  ShowDump2(DP,0,Sz,0,0,0,0,Nil,false, OutS, OutP);
+  s+=OutS;
+end ;
+
 
 { TRangeBaseDef. }
 
@@ -2353,6 +3357,47 @@ begin
   PutS(IntLStr(DP,Sz,Neg));
 end ;
 
+
+function TRangeBaseDef.ShowValue2(DP: Pointer; DS: Cardinal; var s:string): integer {Size used};
+var
+  CP0: TScanState;
+  Neg: boolean;
+  Lo: TNDX;
+  Tag: Char;
+begin
+  if Sz>DS then begin
+    Result := -1;
+    Exit;
+  end ;
+  Result := Sz;
+  if Def=Nil then
+    Tag := drRangeDef{Just in case}
+  else
+    Tag := TDCURecTag(Def^);
+  case Tag of
+    drChRangeDef:
+     if Sz=1 then begin
+       s+=PutS_pat(CharStr2(Char(DP^)));
+       Exit;
+     end ;
+    drWCharRangeDef:
+     if Sz=2 then begin
+       s+=PutS_pat(WCharStr2(WideChar(DP^)));
+       Exit;
+     end ;
+    drBoolRangeDef: begin
+      s+=PutS_pat(BoolStr(DP,Sz));
+      Exit;
+    end ;
+  end ;
+  ChangeScanState(CP0,LH,18);
+  Lo := ReadIndex;
+  Neg := NDXHi<0{Lo<0};
+  RestoreScanState(CP0);
+  s+=PutS_pat(IntLStr(DP,Sz,Neg));
+end ;
+
+
 procedure TRangeBaseDef.Show;
 var
   Lo,Hi: TInt64Rec;
@@ -2382,6 +3427,45 @@ begin
   PutS('..');
   ShowVal(Hi);
 end ;
+
+function TRangeBaseDef.Show2:string;
+var
+  Lo,Hi: TInt64Rec;
+  U: TUnit;
+  T: TTypeDef;
+
+  procedure ShowVal2(var V: TInt64Rec);
+  begin
+    if (T=Nil)or(U.ShowTypeValue2(T,@V,8,true,result)<0) then begin
+      NDXHi := V.Hi;
+      result+=PutS_pat(NDXToStr2(V.Lo));
+    end ;
+  end ;
+
+begin
+  result:='';
+  result+=inherited Show2;
+  Inc(AuxLevel);
+
+  if conf_verbose > 10 then
+    result+=PutSFmt_pat('/*Base Type:%x*/',[B]);
+
+  CurUnit.ShowTypeName2(hDTBase,result);
+  Dec(AuxLevel);
+  GetRange(Lo,Hi);
+  T := CurUnit.GetGlobalTypeDef(hDTBase,U);
+  if (hDTBase > 0) then begin
+     if (Lo.Hi < -1) then
+        result+= 'unsigned ';
+
+     result+=CurUnit.showtypesizeC(CurUnit.showtypesize2(hDTBase,result));
+     result+= '';
+  end;
+  //ShowVal2(Lo);
+  //result+=PutS_pat('..');
+  //ShowVal2(Hi);
+end ;
+
 
 { TRangeDef. }
 constructor TRangeDef.Create;
@@ -2472,6 +3556,46 @@ begin
   Dec(NLOfs,2);
 end ;
 
+function TEnumDef.Show2:string;
+var
+  EnumConst: TNameDecl;
+  i: integer;
+begin
+  if NameTbl=Nil then begin
+    result+=inherited Show2;
+    result += CurUnit.showtypesizeC(CurUnit.showtypesize2(Ndx,result));
+    //result += '};/*3*/ ';
+    Exit;
+  end ;
+  result:='enum '+ShowNamed2(Nil);
+  result+= ' : ' + CurUnit.showtypesizeC(CurUnit.showtypesize2(Ndx,result));
+  if (Ndx < 0) then begin
+     result+= CurUnit.showtypesizeC(Sz);
+  end;
+
+  result += ' ';
+  result+=ShowBase2;
+  Inc(AuxLevel);
+
+  if conf_verbose > 10 then
+    result+=PutSFmt_pat('/*Base Type:%x*/',[B]);
+
+  CurUnit.ShowTypeName2(hDTBase,result);
+  Dec(AuxLevel);
+  Inc(NLOfs,1);
+  result+=PutS_pat('{'#13#10);
+  Inc(NLOfs,1);
+  for i:=0 to NameTbl.Count-1 do begin
+    if i>0 then
+      result+=PutS_pat(','#13#10);
+    EnumConst := NameTbl[i];
+    result+='    ';
+    result+=PutS_pat(EnumConst.Name^ + ' = ' + Format('0x%x',[i]));
+  end ;
+  result+=#13#10'};'#13#10;
+  Dec(NLOfs,2);
+end ;
+
 { TFloatDef. }
 constructor TFloatDef.Create;
 begin
@@ -2528,6 +3652,18 @@ begin
   inherited Show;
   Inc(AuxLevel);
   PutSFmt('{B:%x}',[B]);
+  Dec(AuxLevel);
+end ;
+
+function TFloatDef.Show2:string;
+begin
+  result:='';
+  Inc(AuxLevel);
+  result+=PutS_pat('float');
+  Dec(AuxLevel);
+  result+=inherited Show2;
+  Inc(AuxLevel);
+  result+=PutSFmt_pat('/*B:%x*/',[B]);
   Dec(AuxLevel);
 end ;
 
@@ -2635,12 +3771,28 @@ begin
   CurUnit.ShowTypeDef(hRefDT,Nil);
 end ;
 
+function TPtrDef.Show2:string;
+begin
+  result:='';
+  result+=inherited Show2;
+  result+=CurUnit.ShowTypeDef2(hRefDT,Nil);
+  result+=PutS_pat('*');
+end ;
+
 { TTextDef. }
 procedure TTextDef.Show;
 begin
   inherited Show;
   PutS('text');
 end ;
+
+function TTextDef.Show2:string;
+begin
+  result:='';
+  result+=inherited Show2;
+  result+=PutS_pat('text');
+end ;
+
 
 { TFileDef. }
 constructor TFileDef.Create;
@@ -2658,6 +3810,18 @@ begin
   CurUnit.ShowTypeDef(hBaseDT,Nil);
   Dec(NLOfs,2);
 end ;
+
+function TFileDef.Show2:string;
+begin
+  result:='';
+  result+=inherited Show2;
+  Inc(NLOfs,2);
+  result+=PutS_pat('file of'+cSoftNL);
+//  PutSFmt('file of {#%x}',[hBaseDT]);
+  result+=CurUnit.ShowTypeDef2(hBaseDT,Nil);
+  Dec(NLOfs,2);
+end ;
+
 
 { TSetDef. }
 constructor TSetDef.Create;
@@ -2752,6 +3916,30 @@ begin
   Dec(NLOfs,2);
 end ;
 
+function TSetDef.Show2:string;
+begin
+  result:='';
+  result+=inherited Show2;
+
+  if (conf_verbose > 10) then
+    result+=PutS_pat('/*set*/ ');
+
+  Inc(AuxLevel);
+
+  if (conf_verbose > 10) then
+    result+=PutSFmt_pat('/*BStart:%x*/ ',[BStart]);
+
+  Dec(AuxLevel);
+  Inc(NLOfs,2);
+
+  if (conf_verbose > 10) then
+    result+=PutS_pat('/*of*/');
+
+  result+=CurUnit.ShowTypeDef2(hBaseDT,Nil);
+  Dec(NLOfs,2);
+end ;
+
+
 { TArrayDef. }
 constructor TArrayDef.Create;
 begin
@@ -2818,6 +4006,35 @@ begin
   Dec(NLOfs,2);
 end ;
 
+function TArrayDef.Show2:string;
+begin
+  result:='';
+
+  //   TPointerList = array[0..MaxListSize - 1] of Pointer;
+  //   Pointer* TPointerList
+  result+=CurUnit.ShowTypeDef2(hDTEl,Nil);
+  result+='* ';
+  if (V <> 0) then
+     result+=Name^;
+
+  if conf_verbose > 10 then
+    result+=PutS_pat('/*array*/');
+
+  Inc(NLOfs,2);
+  result+=ShowBase2;
+  Inc(AuxLevel);
+
+  if conf_verbose > 10 then
+    result+=PutSFmt_pat('/*B1:%x*/',[B1]);
+
+  Dec(AuxLevel);
+  //result+=PutS_pat('[');
+  //result+=CurUnit.ShowTypeDef2(hDTNDX,Nil);
+  //result+=PutS_pat('] of'+cSoftNL);
+  //result+=CurUnit.ShowTypeDef2(hDTEl,Nil);
+  Dec(NLOfs,2);
+end ;
+
 { TShortStrDef. }
 function TShortStrDef.ShowValue(DP: Pointer; DS: Cardinal): integer {Size used};
 var
@@ -2858,6 +4075,27 @@ begin
   Dec(NLOfs,2);
 end ;
 
+function TShortStrDef.Show2:string;
+begin
+  result:='';
+  if Sz=Cardinal(-1) then
+    result+=PutS_pat('ShortString')
+  else
+    result+=PutSFmt_pat('String[%d]',[Sz-1]);
+  Inc(NLOfs,2);
+  result+=ShowBase2;
+//  PutSFmt('{B1:%x,[#%x:',[B1,hDTNDX]);
+  Inc(AuxLevel);
+  result+=PutSFmt_pat('{B1:%x,[',[B1]);
+  result+=CurUnit.ShowTypeDef2(hDTNDX,Nil);
+//  PutSFmt('] of #%x:',[hDTEl]);
+  result+=PutS_pat('] of'+cSoftNL);
+  result+=CurUnit.ShowTypeDef2(hDTEl,Nil);
+  result+=PutS_pat('}');
+  Dec(AuxLevel);
+  Dec(NLOfs,2);
+end ;
+
 { TStringDef. }
 function TStringDef.ShowStrConst(DP: Pointer; DS: Cardinal): integer {Size used};
 var
@@ -2879,6 +4117,30 @@ begin
   Result := L+9;
   PutS(StrConstStr(VP,L));
 end ;
+
+
+function TStringDef.ShowStrConst2(DP: Pointer; DS: Cardinal; var s:string): integer {Size used};
+var
+  L: integer;
+  VP: Pointer;
+begin
+  Result := -1;
+  if DS<9 {Min size} then
+    Exit;
+  if integer(DP^)<>-1 then
+    Exit {Reference count,-1 => ~infinity};
+  VP := PChar(DP)+SizeOf(integer);
+  L := integer(VP^);
+  if DS<L+9 then
+    Exit;
+  Inc(PChar(VP),SizeOf(integer));
+  if (PChar(VP)+L)^<>#0 then
+    Exit;
+  Result := L+9;
+  //PutS(StrConstStr(VP,L));
+  s+=PutS_pat(StrConstStr(VP,L));
+end ;
+
 
 function TStringDef.ShowRefValue(Ndx: TNDX; Ofs: Cardinal): boolean;
 var
@@ -2935,6 +4197,25 @@ begin
   Dec(NLOfs,2);
 end ;
 
+function TStringDef.Show2:string;
+begin
+  result:='';
+  result+=PutS_pat('String');
+  Inc(NLOfs,2);
+  result+=ShowBase2;
+//  PutSFmt('{B1:%x,[#%x:',[B1,hDTNDX]);
+  Inc(AuxLevel);
+  result+=PutSFmt_pat('{B1:%x,[',[B1]);
+  result+=CurUnit.ShowTypeDef2(hDTNDX,Nil);
+//  PutSFmt('] of #%x:',[hDTEl]);
+  result+=PutS_pat('] of'+cSoftNL);
+  result+=CurUnit.ShowTypeDef2(hDTEl,Nil);
+  result+=PutS_pat('}');
+  Dec(AuxLevel);
+  Dec(NLOfs,2);
+end ;
+
+
 { TVariantDef. }
 constructor TVariantDef.Create;
 begin
@@ -2950,6 +4231,17 @@ begin
   Inc(AuxLevel);
   if CurUnit.Ver>verD2 then
     PutSFmt('{B:0x%x}',[B]);
+  Dec(AuxLevel);
+end ;
+
+function TVariantDef.Show2:string;
+begin
+  result:='';
+  result+=PutS_pat('variant');
+  result+=inherited Show2;
+  Inc(AuxLevel);
+  if CurUnit.Ver>verD2 then
+    result+=PutSFmt_pat('{B:0x%x}',[B]);
   Dec(AuxLevel);
 end ;
 
@@ -2973,6 +4265,23 @@ begin
   CurUnit.ShowTypeDef(hObjDT,Nil);
   Dec(NLOfs,2);
 end ;
+
+function TObjVMTDef.Show2:string;
+begin
+  result:=''; //struct {
+  result+=inherited Show2;
+  Inc(NLOfs,2);
+  //no class of
+  //result+=PutS_pat('class of'+cSoftNL);
+  if conf_verbose > 10 then begin
+    Inc(AuxLevel);
+    result+=PutSFmt_pat('/*NDX1:#%x*/',[NDX1]);
+    Dec(AuxLevel);
+  end;
+  result+=CurUnit.ShowTypeDef2(hObjDT,Nil);
+  Dec(NLOfs,2);
+end ;
+
 
 { TRecBaseDef. }
 procedure TRecBaseDef.ReadFields(LK: TDeclListKind);
@@ -3064,6 +4373,33 @@ begin
   PutS('end');
 end ;
 
+
+function TRecDef.Show2:string;
+var
+  Ofs0: Cardinal;
+begin
+  result:='';
+  //result+=PutS_pat('record ');
+  result+=PutS_pat('struct /*3*/');
+  result+=FName^;
+  result+=' {';
+  Inc(AuxLevel);
+
+  if (conf_verbose > 10) then
+    result+=PutSFmt_pat('/*B2:%x*/',[B2]);
+
+  Dec(AuxLevel);
+  result+=inherited Show2;
+  Ofs0 := NLOfs;
+  result+=CurUnit.ShowDeclList2(dlFields,Fields,Ofs0,2,[dsLast,dsSoftNL],RecSecKinds,skPublic);
+  {if Args<>Nil then}
+  NLOfs := Ofs0;
+  //NL;
+  result+=#13#10;
+  result+=PutS_pat('} /*endRecDef*/');
+end ;
+
+
 { TProcTypeDef. }
 constructor TProcTypeDef.Create;
 var
@@ -3116,6 +4452,15 @@ begin
     Result := 'function';
 end ;
 
+function TProcTypeDef.ProcStr2: String;
+begin
+  if IsProc then
+    Result := 'void2'
+  else
+    Result := 'function2';
+end ;
+
+
 procedure TProcTypeDef.ShowDecl(Braces: PChar);
 var
   Ofs0: Cardinal;
@@ -3153,12 +4498,76 @@ begin
   NLOfs := Ofs0;
 end ;
 
+function TProcTypeDef.ShowDecl2(Braces: PChar):string;
+var
+  Ofs0: Cardinal;
+begin
+  result:='';
+  if Braces=Nil then
+    Braces := '()';
+  {if B0 and $4<>0 then}
+  Inc(AuxLevel);
+
+  if (conf_verbose > 10) then begin
+    if CurUnit.Ver>0 then
+      result+=PutSFmt_pat('/*NDX0:#%x*/',[NDX0]);
+  end;
+
+  Dec(AuxLevel);
+  result+=inherited Show2;
+  Inc(AuxLevel);
+  if (AddSz <> 0) then
+     result+=PutSFmt_pat('/*AddSz:%x*/',[AddSz]);
+  Dec(AuxLevel);
+  Ofs0 := NLOfs;
+  result+=PutS_pat(Braces[0]);
+  if Fields<>Nil then begin
+    result+=CurUnit.ShowDeclList2(dlArgsT,Fields,Ofs0,2,[dsComma,dsNoFirst],
+      ProcSecKinds,skNone);
+  end ;
+  result+=PutS_pat(Braces[1]);
+  NLOfs := Ofs0+2;
+  if not IsProc then begin
+    //c++
+    //result+=PutS_pat(':');
+    //result+='/*';
+    //result+=CurUnit.ShowTypeDef2(hDTRes,Nil);
+    //result+='*/';
+  end ;
+  if NDX0 and $10<>0 then
+    result+=PutS_pat(cSoftNL+'of object');
+  if CallKind<>pcRegister then begin
+    //SoftNL;
+    result+=#13#10;
+    result+=PutS_pat(CallKindName[CallKind]);
+  end ;
+  NLOfs := Ofs0;
+end ;
+
 procedure TProcTypeDef.Show;
 begin
   PutS(ProcStr);
  // SoftNL;
   ShowDecl(Nil);
 end ;
+
+function TProcTypeDef.Show2:string;
+begin
+  result:='';
+  result+=#13#10;
+  //result+=PutS_pat(ProcStr2);
+  if (IsProc) then
+     result+='void'
+  else
+      result+=CurUnit.ShowTypeDef2(hDTRes,Nil);
+
+  result+='(*';
+  result+= ShowNamed2(Nil);
+  result+=')';
+
+  result+=ShowDecl2(Nil);
+end ;
+
 
 { TObjDef. }
 constructor TObjDef.Create;
@@ -3201,6 +4610,38 @@ begin
   NL;
   PutS('end');
 end ;
+
+
+function TObjDef.Show2:string;
+var
+  Ofs0: Cardinal;
+begin
+  result:='';
+  Ofs0 := NLOfs;
+  Inc(NLOfs,2);
+  result+=PutS_pat('object');
+  result+=inherited Show2;
+  if hParent<>0 then begin
+    result+=PutS_pat('(');
+    CurUnit.ShowTypeName2(hParent,result);
+    result+=PutS_pat(')');
+  end ;
+  Inc(AuxLevel);
+
+  result+=#13#10;
+
+  if (conf_verbose > 10) then
+    result+=PutSFmt_pat('{B03:%x, BFE:%x, NDX1:%x, B00:%x)}', [B03, BFE, NDX1, B00]);
+
+  result+=CurUnit.ShowDeclList2(dlFields,Fields,Ofs0,2,[dsLast,dsSoftNL],ClassSecKinds,skNone);
+  {if Args<>Nil then}
+  Dec(AuxLevel);
+  NLOfs := Ofs0;
+  //NL;
+  result+=#13#10;
+  result+=PutS_pat('endObjDef');
+end ;
+
 
 { TClassDef. }
 
@@ -3292,6 +4733,61 @@ begin
   PutS('end');
 end ;
 
+
+function TClassDef.Show2:string;
+var
+  Ofs0: Cardinal;
+  i,j: integer;
+  result2:string;
+begin
+  result := '';
+  Ofs0 := NLOfs;
+  Inc(NLOfs,2);
+
+  result += 'struct/*Cls*/ ';
+  result += FName^;
+  result += ' {';
+  if (hParent<>0)or(ICnt<>0) then begin
+    //result += ' {';
+    i := 0;
+    if hParent<>0 then begin
+      result += #13#10 + '';
+      result2 := '';
+      CurUnit.ShowTypeName2(hParent, result2);
+      result += stringReplace(result2,'SysUtils.','',[rfReplaceAll]);
+      result += ' parent;';
+      Inc(i);
+    end ;
+    NDXHi := 0;
+    for j:=0 to integer(ICnt)-1 do begin
+      if i>0 then
+        result += PutS_pat(','+cSoftNL);
+      CurUnit.ShowTypeName2(ITbl^[2*j], result);
+      result += PutSFmt_pat('-{%s}-',[NDXToStr2(ITbl^[2*j+1])]);
+    end ;
+    //result += '}'+cSoftNL;
+  end ;
+  Inc(AuxLevel);
+
+  //if conf_verbose > 5 then begin
+    result += PutSFmt_pat('/*InstBase:(%s),', [meta(InstBaseSz,InstBaseRTTISz,InstBaseV)] );
+    result += PutSFmt_pat('Ndx2(Num methods):#%x,NdxFE:#%x,NDX00a:#%x,B04:%x', [Ndx2,NdxFE,NDX00a,B04]);
+    result += '*/';
+  //end;
+
+  result += #13#10;
+  Dec(AuxLevel);
+  result += inherited Show2;
+  //CurUnit.ShowDeclList(dlClass,Fields,Ofs0,2,[dsLast],ClassSecKinds,skNone);
+  result += CurUnit.ShowDeclList2(dlClass,Fields,Ofs0,2,[dsLast,dsSoftNL],ClassSecKinds,skNone);
+  //result2 := CurUnit.ShowDeclList3(dlClass,Fields,Ofs0,2,[dsLast],ClassSecKinds,skNone);
+  NLOfs := Ofs0;
+
+  result += #13#10'} ';
+  result += '/*endClassDef*/';
+end ;
+
+
 { TInterfaceDef. }
 constructor TInterfaceDef.Create;
 var
@@ -3339,12 +4835,56 @@ begin
   PutS('end');
 end ;
 
+function TInterfaceDef.Show2:string;
+var
+  Ofs0: Cardinal;
+begin
+  result:='';
+  Ofs0 := NLOfs;
+  Inc(NLOfs,2);
+  result+=PutS_pat('interface ');
+  if hParent<>0 then begin
+    result+=PutS_pat('(');
+    CurUnit.ShowTypeName2(hParent,result);
+    result+=PutS_pat(')');
+  end ;
+  Inc(AuxLevel);
+  //SoftNL;
+  result+=#13#10;
+  result+=PutSFmt_pat('/*Ndx1:#%x,B:%x*/', [Ndx1,B]);
+  Dec(AuxLevel);
+  //SoftNL;
+  result+=#13#10;
+  result+=inherited Show2;
+  //SoftNL;
+  result+=#13#10;
+  with GUID^ do
+    result+=PutSFmt_pat('[''{%8.8x-%4.4x-%4.4x-%2.2x%2.2x-%2.2x%2.2x%2.2x%2.2x%2.2x%2.2x}'']',
+      [D1,D2,D3,D4[0],D4[1],D4[2],D4[3],D4[4],D4[5],D4[6],D4[7]]);
+  result+=CurUnit.ShowDeclList2(dlInterface,Fields,Ofs0,2,[dsLast,dsSoftNL],ClassSecKinds,skNone);
+  {if Args<>Nil then}
+  NLOfs := Ofs0;
+  //NL;
+  result+=#13#10;
+  result+=PutS_pat('endInterface');
+end ;
+
+
 { TVoidDef. }
 procedure TVoidDef.Show;
 begin
   PutS('void');
   inherited Show;
 end ;
+
+function TVoidDef.Show2:string;
+begin
+  result:='';
+  result+=PutS_pat('/*2*/');
+  result+=PutS_pat('void ');
+  result+=inherited Show2;
+end ;
+
 
 procedure TUnit.ReadSourceFiles;
 var
@@ -3825,6 +5365,33 @@ begin
   CurUnit := U0;
 end ;
 
+
+function TUnit.ShowTypeValue2(T: TTypeDef; DP: Pointer; DS: Cardinal;
+  IsConst: boolean; var s:string): integer {Size used};
+var
+  U0: TUnit;
+  MS: TFixupMemState;
+begin
+  if T=Nil then begin
+    Result := -1;
+    Exit;
+  end ;
+  U0 := CurUnit;
+  CurUnit := Self;
+  if IsConst then begin
+    SaveFixupMemState(MS);
+    SetCodeRange(DP,DP,DS);
+  end ;
+  if IsConst and (T is TStringDef) then
+    Result := TStringDef(T).ShowStrConst2(DP,DS,s)
+  else
+    Result := T.ShowValue2(DP,DS,s);
+  if IsConst then
+    RestoreFixupMemState(MS);
+  CurUnit := U0;
+end ;
+
+
 function TUnit.ShowGlobalTypeValue(hDef: TNDX; DP: Pointer; DS: Cardinal;
   AndRest,IsConst: boolean): integer {Size used};
 var
@@ -3857,6 +5424,41 @@ begin
   end ;
 end ;
 
+
+function TUnit.ShowGlobalTypeValue2(hDef: TNDX; DP: Pointer; DS: Cardinal;
+  AndRest,IsConst: boolean; var s:string): integer {Size used};
+var
+  T: TTypeDef;
+  U: TUnit;
+  SzShown: integer;
+  OutS: String;
+  OutP: String;
+begin
+  if DP=Nil then begin
+    Result := -1;
+    Exit;
+  end ;
+  T := GetGlobalTypeDef(hDef,U);
+  Result := U.ShowTypeValue2(T,DP,DS,IsConst, s);
+  if not AndRest then
+    Exit;
+  SzShown := Result;
+  if SzShown<0 then
+    SzShown := 0;
+  if SzShown>=DS then
+    Exit;
+  if (PChar(DP)>=FDataBlPtr)and(PChar(DP)<FDataBlPtr+FDataBlSize) then
+    s+=CurUnit.ShowDataBl2(SzShown,PChar(DP)-FDataBlPtr,DS)
+  else begin
+    //NL;
+    s+=#13#10;
+    OutS := '';
+    OutP := '';
+    ShowDump2(DP,0,DS,SzShown,SzShown,0,0,Nil,false, OutS, OutP);
+    s+=OutS;
+  end ;
+end ;
+
 function TUnit.ShowGlobalConstValue(hDef: integer): boolean;
 var
   D: TDCURec;
@@ -3873,6 +5475,23 @@ begin
   Result := true;
 end ;
 
+function TUnit.ShowGlobalConstValue2(hDef: integer; var s:string): boolean;
+var
+  D: TDCURec;
+  U,U0: TUnit;
+begin
+  Result := false;
+  D := GetGlobalAddrDef(hDef,U);
+  if (D=Nil)or not(D is TConstDecl) then
+    Exit;
+  U0 := CurUnit;
+  CurUnit := U;
+  s+=TConstDecl(D).ShowValue2;
+  CurUnit := U0;
+  Result := true;
+end ;
+
+
 procedure TUnit.ShowTypeDef(hDef: integer; N: PName);
 var
   D: TBaseDef;
@@ -3887,6 +5506,26 @@ begin
   end ;
   D.ShowNamed(N);
 end ;
+
+function TUnit.ShowTypeDef2(hDef: integer; N: PName):string;
+var
+  D: TBaseDef;
+begin
+  result := '';
+  Inc(AuxLevel);
+  if (conf_verbose > 10) then
+     result += PutSFmt_pat('/*T#%x*/',[hDef]);
+
+  Dec(AuxLevel);
+  D := GetTypeDef(hDef);
+  if D=Nil  then begin
+    result += '?';
+    Exit;
+  end ;
+
+  result += D.ShowNamed2(N);
+end ;
+
 
 function TUnit.ShowTypeName(hDef: integer): boolean;
 var
@@ -3906,6 +5545,65 @@ begin
   D.ShowName;
   Result := true;
 end ;
+
+function TUnit.ShowTypeName2(hDef: integer; var O:string): boolean;
+var
+  D: TBaseDef;
+  N: PName;
+begin
+  Result := false;
+  //PutSFmt('{T#%x}',[hDef]);
+  if (conf_verbose > 10) then
+    O += PutSFmt_pat('/*T#%x*/',[hDef]);
+
+  if (hDef<=0)or(hDef>FTypes.Count) then
+    Exit;
+  D := FTypes[hDef-1];
+  if D=Nil  then
+    Exit;
+  N := D.FName;
+  if (N=Nil)or(N^[0]=#0) then
+    Exit;
+  //D.ShowName;
+  O+=D.ShowName2;
+  Result := true;
+end ;
+
+function TUnit.showtypesizeC(Sz: integer): string;
+begin
+  result :='';
+  if conf_verbose > 10 then
+     result += '/*type size error '+inttostr(sz)+';*/';
+
+  case Sz of
+     1: result := 'char';
+     2: result := 'Word';
+     4: result := 'Integer';
+     8: result := 'Int64';
+    10: result := 'Real';
+  end;
+end;
+
+function TUnit.showtypesize2(hDef: integer; var O:string): integer;
+var
+  D: TBaseDef;
+  N: PName;
+begin
+  Result := 0;
+  if (conf_verbose > 10) then
+    O += PutSFmt_pat('/*T#%x*/',[hDef]);
+
+  if (hDef<=0)or(hDef>FTypes.Count) then
+    Exit;
+  D := FTypes[hDef-1];
+  if D=Nil  then
+    Exit;
+  if not(D is TTypeDef) then
+   exit;
+  result := TTypeDef(D).Sz;
+end ;
+
+
 
 function TUnit.TypeIsVoid(hDef: integer): boolean;
 var
@@ -4364,6 +6062,167 @@ begin
   NLOfs := Ofs0;
 end ;
 
+function TUnit.ShowDeclList2(LK: TDeclListKind; Decl: TNameDecl; Ofs: Cardinal;
+  dScopeOfs: integer; SepF: TDeclSepFlags; ValidKinds: TDeclSecKinds;
+  skDefault: TDeclSecKind):string;
+const
+  SecNames: array[TDeclSecKind] of String = (
+    '','label','const','type','var',
+    'threadvar','resourcestring','exports','',
+    'private','protected','public','published');
+
+const
+  TstDeclCnt: integer=0;
+var
+  DeclCnt: integer;
+  SepS,SecN: String;
+  CurSK,SK: TDeclSecKind;
+  Ofs0: Cardinal;
+  Visible: boolean;
+begin
+  result := '';
+  DeclCnt := 0;
+  if dsComma in SepF then
+    SepS := ','
+  else
+    SepS := ';';
+  CurSK := skDefault;
+  Ofs0 := NLOfs;
+  NLOfs := Ofs+dScopeOfs;
+  while Decl<>Nil do begin
+    Inc(TstDeclCnt);
+    Visible := Decl.IsVisible(LK);
+    if Visible then begin
+      SK := Decl.GetSecKind;
+
+      //dublicates ; patch
+      if (conf_verbose > 10) or
+         ((conf_verbose = 0) and (not(Decl is TMethodDecl) and not(Decl is TPropDecl))) then
+      if (DeclCnt>0) then begin
+        result += SepS;
+
+        //if dsNL in SepF then
+        //  result += #13#10;
+      end ;
+      if (SK<>CurSK) then begin
+        CurSK := SK;
+        NLOfs := Ofs;
+
+        if (conf_verbose > 10) then begin
+          SecN := '//'+SecNames[SK] + '2 ';
+          if (SecN = '//var2 ') then
+             result+='';
+
+          if SecN<>'' then begin
+            result += #13#10+SecN+#13#10;
+            //result += SecN;
+          end ;
+        end;
+
+
+        if (SK<>skProc)or(dsOfsProc in SepF) then
+          Inc(NLOfs,dScopeOfs);
+      end ;
+      //if (DeclCnt>0)or not(dsNoFirst in SepF) then
+
+      //dublicates ; patch
+      if (conf_verbose > 10) or
+         ((conf_verbose = 0) and (not(Decl is TMethodDecl) and not(Decl is TPropDecl))) then
+      if dsSoftNL in SepF then
+        result += #13#10;// + '('+inttostr(DeclCnt)+' '+Decl.ClassName+')';
+
+      //if Decl is TVarDecl then
+      //   result += StringReplace(TVarDecl(Decl).ShowDef2(false),'/System.','/',[rfReplaceAll]);
+
+      //only class fields show
+      if (conf_verbose > 10) or
+         ((conf_verbose = 0) and not(Decl is TMethodDecl) and not(Decl is TPropDecl)) then begin
+
+        case LK of
+          dlMain: result += StringReplace(Decl.ShowDef2(false),'/System.','/',[rfReplaceAll]);
+          dlMainImpl: result += StringReplace(Decl.ShowDef2(true),'/System.','/',[rfReplaceAll])
+        else
+          result += StringReplace(Decl.Show2,'/System.','/',[rfReplaceAll]);
+        end ;
+
+      end;
+
+      Inc(DeclCnt);
+    end ;
+    Decl := Decl.Next as TNameDecl;
+  end ;
+  if (DeclCnt>0)and(dsLast in SepF) then begin
+    result += SepS;
+  end ;
+  result := StringReplace(Result,#0,' ',[rfReplaceAll]);
+  NLOfs := Ofs0;
+
+  //if (LK = dlClass) and (conf_verbose = 0) then
+  //   result := '';
+
+end ;
+procedure fileputcontext(fn:string; val:string);
+var f:TEXT;
+begin
+  AssignFile(f, fn);
+  Rewrite(f);
+  writeln(f,val);
+  if TTextRec(f).Mode<>fmClosed then
+    Close(f);
+end;
+
+procedure fileputcontext_raw(fn:string; val:string);
+var f:file;
+begin
+AssignFile(f, fn);
+Rewrite(f,1);
+blockwrite(f,val[1],val.Length);
+if TFileRec(f).Mode<>fmClosed then
+  Close(f);
+end;
+
+
+function TUnit.ShowDeclList3(LK: TDeclListKind; Decl: TNameDecl; Ofs: Cardinal;
+  dScopeOfs: integer; SepF: TDeclSepFlags; ValidKinds: TDeclSecKinds;
+  skDefault: TDeclSecKind):string;
+const
+  SecNames: array[TDeclSecKind] of String = (
+    '','label','const','typz','var',
+    'threadvar','resourcestring','exports','',
+    'private','protected','public','published');
+
+const
+  TstDeclCnt: integer=0;
+var
+  DeclCnt: integer;
+//  SepS,SecN: String;
+//  CurSK,SK: TDeclSecKind;
+  Ofs0: Cardinal;
+  Visible: boolean;
+begin
+  result := '';
+  DeclCnt := 0;
+  while Decl<>Nil do begin
+    Inc(TstDeclCnt);
+    Visible := Decl.IsVisible(LK);
+    if Visible then begin
+      case LK of
+        dlMain: result += Decl.ShowDef2(false);
+        dlMainImpl: result += Decl.ShowDef2(true)
+      else
+        result += Decl.Show2;
+      end ;
+      Inc(DeclCnt);
+      result+=#13#10;
+    end ;
+    Decl := Decl.Next as TNameDecl;
+  end ;
+  //if (result<>'') then fileputcontext('log.txt',result);
+
+end ;
+
+
+
 procedure ShowDeclTList(Title: String; L: TList);
 var
   i: integer;
@@ -4379,19 +6238,64 @@ begin
     PutSFmt('#%x: ',[i]);
     D := L[i-1];
     if D<>Nil then begin
+
       if D is TNameDecl then begin
         //if not TNameDecl(D).ShowDef(false) then
           TNameDecl(D).ShowName;
-       end
-      else if D is TBaseDef then
-        TBaseDef(D).ShowNamed(Nil)
-      else
+
+          if D is TProcDecl then begin
+            PutS(' args:');
+            TProcDecl(D).ShowArgs;
+          end;
+      end else if D is TBaseDef then begin
+        TBaseDef(D).ShowNamed(Nil);
+      end else
         D.Show;
-     end
+
+
+    end
     else
       PutS('-');
   end ;
 end ;
+
+
+function TUnit.ShowDeclArgs2(i: integer):string;
+var
+  D: TDCURec;
+  Info: PTypeInfo;
+begin
+  result:='';
+  NLOfs := 0;
+  //for i:=1 to L.Count do begin
+    NLOfs := 2;
+    //result+=PutSFmt_pat('#%x: ',[i]);
+    D := FAddrs[i-1];
+    if D<>Nil then begin
+      if D is TImpDef then begin
+        result+='()/*['+D.ClassType.ClassName+']*/';
+      end else
+
+      if D is TNameDecl then begin
+          //result+=TNameDecl(D).ShowName2;
+
+          if D is TProcDecl then begin
+            //result+=PutS_pat(' args2:');
+            result+= stringreplace( TProcDecl(D).ShowArgs2,
+            #13#10,'',[rfReplaceAll]);
+          end;
+      end else if D is TBaseDef then begin
+        result+=TBaseDef(D).ShowNamed2(Nil);
+      end else
+        result+=D.Show2;
+      //result := stringreplace( result, 'System.','',[rfReplaceAll]);
+      //result := stringreplace( result, '.','_',[rfReplaceAll]);
+    end
+    else
+      result+=PutS_pat('-');
+  //end ;
+end ;
+
 
 { Two methods against circular references }
 function TUnit.RegTypeShow(T: TBaseDef): boolean;
@@ -4403,6 +6307,16 @@ begin
   Result := true;
 end ;
 
+function TUnit.RegTypeShow2(T: TBaseDef; var O:string): boolean;
+begin
+  Result := false;
+  if FTypeShowStack.IndexOf(T)>=0 then
+    Exit;
+  FTypeShowStack.Add(T);
+  Result := true;
+end ;
+
+
 procedure TUnit.UnRegTypeShow(T: TBaseDef);
 var
   C: integer;
@@ -4412,6 +6326,19 @@ begin
     DCUError('in UnRegTypeShow');
   FTypeShowStack.Count := C;
 end ;
+
+function TUnit.UnRegTypeShow2(T: TBaseDef):string;
+var
+  C: integer;
+begin
+  result := '';
+  C := FTypeShowStack.Count-1;
+  if (C<0)or(FTypeShowStack[C]<>T) then
+    DCUError('in UnRegTypeShow');
+  FTypeShowStack.Count := C;
+end ;
+
+
 {
 function TUnit.RegDataBl(BlSz: Cardinal): Cardinal;
 begin
@@ -4460,6 +6387,34 @@ begin
 //  Dec(NLOfs,2);
 end ;
 
+function TUnit.ShowDataBl2(Ofs0,BlOfs,BlSz: Cardinal):string;
+var
+  Fix0: integer;
+  DP: PChar;
+  OutS: string;
+  OutP: String;
+begin
+  result:='';
+  //PutSFmt('raw[$%x..$%x]',[Ofs0,BlSz-1]);
+  if conf_verbose > 10 then
+    result+=PutSFmt_pat('/*raw[$%x..$%x]*/',[Ofs0,BlSz-1]);
+
+  if conf_verbose > 10 then
+    if BlOfs<>Cardinal(-1) then
+      result+=PutSFmt_pat('/*at $%x*/',[BlOfs]);
+
+  DP := GetBlockMem(BlOfs+Ofs0,BlSz-Ofs0,BlSz);
+  if DP=Nil then
+    Exit;
+
+  result+=#13#10;
+  Fix0 := GetStartFixup(BlOfs);
+  OutS := '';
+  ShowDump2(DP,0,BlSz,Ofs0,BlOfs+Ofs0,0,
+    FFixupCnt-Fix0,@FFixupTbl^[Fix0],true,OutS,OutP);
+  result += OutS;
+end ;
+
 procedure TUnit.ShowCodeBl(Ofs0,BlOfs,BlSz: Cardinal;
   var OutS:string; var OutPat:String );
 var
@@ -4476,6 +6431,7 @@ begin
   OutS := '';
   OutPat := '';
   Inc(AuxLevel);
+
   if Ofs0=0 then
     PutSFmt('//raw[0x%x]',[BlSz])
   else
@@ -4728,6 +6684,7 @@ procedure TUnit.Show;
 var
   i: integer;
   FP: PFixupRec;
+  s:string;
 begin
   if Self=Nil then
     Exit;
@@ -4751,6 +6708,7 @@ begin
   NLOfs := 0;
   NL;
   NL;
+
   if InterfaceOnly then
     Exit;
   PutS('implementation');
@@ -4811,6 +6769,11 @@ begin
     NL;
   end ;
   FlushOut;
+
+  s := ShowDeclList2(dlMain,FDecls,0,2,[dsLast,dsNL,dsSoftNL],BlockSecKinds,skNone);
+  s += ShowDeclList2(dlMainImpl,FDecls,0,2,[dsLast,dsNL,dsSoftNL],BlockSecKinds,skNone);
+  writeln(FNh,'#include "C:\Users\adm\Downloads\Delphi2\DELPHI32\OPTIONS\SOURCE\RTL\system.hpp"'#13#10+s);
+
 end ;
 
 end.
