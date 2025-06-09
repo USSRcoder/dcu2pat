@@ -38,12 +38,14 @@ When loading .exe in IDA -
 
     Calling Conversion - fastcall (x32) by default
    
-3. Run .h file(s) with type information so that IDA correctly recognizes procedures by name and their arguments. That is why this version of DCU2PAT generates .h files (you need to manually edit this file, because it is raw and will not work out of the box);
+2. Run .h file(s) with type information so that IDA correctly recognizes procedures by name and their arguments. That is why this version of DCU2PAT generates .h files (you need to manually edit this file, because it is raw and will not work out of the box);
 
     Alternatively, system.hpp can be taken from CBuilder (generated using bcbdcc32.exe from .pas source included in CBuilder). But it does not have all the types (only 10%. And this is cpp, and IDA needs c).
    
     This is a fairly comprehensive and separate topic - how to generate types for IDA (collection of Python scripts).
    
+3. Load "d2.1.sig"
+
 4. Enable "auto analysis";
 
 This way I was able to recognize almost 80%+ of the functions from the library on my victim.
